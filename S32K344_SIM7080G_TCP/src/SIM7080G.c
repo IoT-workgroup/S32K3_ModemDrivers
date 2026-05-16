@@ -146,7 +146,7 @@ uint8_t connectMQTT(void){
 		return status;
 	}
 
-	sendAT("+SMCONF=\"PASSWORD\",\"aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8\"", sizeof("+SMCONF=\"PASSWORD\",\"aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8\""), 0);
+	sendAT("+SMCONF=\"PASSWORD\",", sizeof("+SMCONF=\"PASSWORD\","), 0);
 	if (1 != waitResponseImpl(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		status = 1;
 		return status;
