@@ -14,4 +14,9 @@ The example in which the drivers were tested are implemented with the following 
 - Design Studio version 3.6.4
 - NXP Real-Time Drivers (RTDs) for S32K3XX version 7.0.0
 
+## Required hardware components
+The example in which the drivers were tested are implemented with the following hardware components:
+- S32K344MINI-EVB 
+- SIM7080G
+
 ## Next Steps
