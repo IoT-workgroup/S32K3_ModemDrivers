@@ -30,7 +30,6 @@ class UART:
     def send_bytes(self, buffer):
         self._ser.flush()
         self._ser.write(buffer)
-        
 
     def get_byte(self):
         self._ser.flush()
