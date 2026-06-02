@@ -4,10 +4,11 @@
  *  Created on: Oct 16, 2025
  *      Author: nxf63523
  */
-#include "device_drivers.h"
-#include "AT.h"
 #include <string.h>
 #include <stdlib.h>
+
+#include "S32K3_Drivers.h"
+#include "SIM7080G.h"
 
 char Resp_Ready[] 	= "READY";
 char Resp_Pin[] 	= "SIM PIN";

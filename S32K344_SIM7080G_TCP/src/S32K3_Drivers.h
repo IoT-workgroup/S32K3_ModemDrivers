@@ -5,8 +5,8 @@
  *      Author: nxf63523
  */
 
-#ifndef DEVICE_DRIVERS_H_
-#define DEVICE_DRIVERS_H_
+#ifndef S32K3_DRIVERS_H_
+#define S32K3_DRIVERS_H_
 
 #include "Lpuart_Uart_Ip.h"
 #include "Lpuart_Uart_Ip_Irq.h"
@@ -107,4 +107,4 @@ uint8_t streamSkipUntil
 	uint8_t expectedChar,
 	uint32_t timeout_ms
 );
-#endif /* DEVICE_DRIVERS_H_ */
+#endif /* S32K3_DRIVERS_H_ */

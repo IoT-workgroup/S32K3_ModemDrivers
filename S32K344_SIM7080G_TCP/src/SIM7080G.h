@@ -1,7 +1,7 @@
 /*
- * SIM7080.h
+ * AT.h
  *
- *  Created on: 1 oct. 2025
+ *  Created on: 2 oct. 2025
  *      Author: jesus
  */
 
@@ -10,20 +10,43 @@
 
 #include "Mcal.h"
 
-#define CSQ							"AT+CSQ\r\n"
-#define QUERY_CPSI					"AT+CPSI?\r\n"
-#define EN_CNACT					"AT+CNACT=0,1\r\n"
-#define CACID						"AT+CACID=0\r\n"
-#define CAOPEN						"AT+CAOPEN=0,0,\"TCP\",\"116.30.219.149\",5001\r\n"
-#define CASEND						"AT+CASEND=0,17,2000\r\n"
-#define MESSAGES					"www.waveshare.com"
-#define CACLOSE						"AT+CLOSE=0\r\n"
-#define DIS_CNCAT					"AT+CNACT=0,0\r\n"
+#define AT_TRANSMIT_TIMEOUT 		(0xFFFFU)
 
-void power_dowm(void);
-void power_up(void);
-void test_functionality(uint8_t *msg_buffer, uint8_t msg_length );
-void tcp_test(void);
-bool isConnect(void);
+typedef enum{
+	AT_RESP_OK,
+	AT_SENT,
+	AT_ERROR
+} at_status;
+
+
+/* Function to initialize the time-out timer */
+void InitTimeoutTimer(uint32_t milliseconds);
+
+/* Function to retrieve the current value of the timeout timer */
+uint32_t GetCurrentTime(void);
+
+/* Function to de-initialize the time-out timer */
+void DeinitTimeoutTimer(void);
+
+/* Function to wait in polling for a specific amount of milliseconds */
+void delay_at(uint32_t milliseconds);
+
+
+uint8_t verifyResponse(char * pExpectedAnswers, uint8_t TotalExpAns);
+at_status send_at(char *s_buf1,char*s_buf2,uint8_t com1length,uint8_t com2length,uint8_t command_num,uint16_t delay_ms);
+at_status sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms);
+uint8_t waitResponseImpl(
+		uint32_t timeout_ms,
+		uint8_t *data,
+		uint8_t *r1,
+		uint8_t *r2,
+		uint8_t *r3,
+		uint8_t *r4,
+		uint8_t *r5,
+		uint8_t *r6,
+		uint8_t *r7);
+int GetIntResponse(void);
+int GetIntBefore(char lastChar);
+
 
 #endif /* SIM7080G_H_ */
