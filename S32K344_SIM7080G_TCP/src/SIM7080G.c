@@ -17,82 +17,73 @@
 uint32 remainingBytes = 0;
 uint8 Rx_Buffer[MAX_LEN] = {0};
 
-static const char GSM_OK[] = "OK\r\n";
-static const char GSM_ERROR[] = "ERROR\r\n";
 
-static bool handleURCs(const char *str);
+/**
+* @brief        Tests the functionality of the AT commands with the modem in serial communication.
+*
+* @api
+* @param[in]     Indicates the time in milliseconds to wait before a timeout occurs.
+* @return        Boolean value
+* @retval        True: AT commands communication received response successfully.
+* @retval        False: AT commands communication failed.
+* implements     Test AT
+*/
+bool TestAT(uint32_t timeout_ms) {
+	uint32_t time_measure = 0;
+	uint8_t status = 1;
+	uint8_t response = 0;
 
-static bool endsWith(const char *str, const char *suffix);
+	/* Initialize the timeout timer to trigger timeout if required */
+	InitTimeoutTimer(timeout_ms);
+
+	do{
+		/* Send the test AT command over serial with a delay of 100ms */
+		status = sendAT("AT\n\r", strlen("AT\n\r"), 100);
+
+		if (status == 0){
+
+			response = waitResponse(200, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+			if (response == 1){
+				return true;
+			}
+		}
+		/* Get current time passed */
+		time_measure = GetCurrentTime();
+	}while(time_measure < timeout_ms);
+
+
+	// TODO: Implement timeout function
+	/* De-initialize the timer in case further is required */
+	DeinitTimeoutTimer();
+
+	return false;
+}
 
 void InitTimeoutTimer(uint32_t milliseconds){
-	uint32_t ms_count_conversion = 0;
 
-	/* Convert the milliseconds parameters to the specific counts required to reach */
-	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
+	/* Calls for the implementation of the initialization of the timeout timer on the specific MCU */
+	InitTimeoutTimerImpl(milliseconds);
 
-	/* Start the STM timer with a defined start value */
-	Stm_Ip_StartTimer(STM_INST_0, STM_START_CNT_VALUE);
-
-	/* Enable the compare channel as comparison will be monitored*/
-	Stm_Ip_EnableChannel(STM_INST_0, CH_0);
-
-	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
-	Stm_Ip_StartCounting(STM_INST_0, CH_0, ms_count_conversion);
 }
 
 uint32_t GetCurrentTime(void){
 	uint32_t milliseconds = 0;
 
-	milliseconds = Stm_Ip_GetCounterValue(STM_INST_0);
-	milliseconds = milliseconds/(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
+	milliseconds = GetCurrentTimeImpl();
 
 	return milliseconds;
 }
 
-boolean GetTimeoutStatus(void){
-	return Stm_Ip_GetInterruptStatusFlag(STM_INST_0, CH_0);
-}
-
 void DeinitTimeoutTimer(void){
-	/* Disable the compare channel as the comparison is no longer needed */
-	Stm_Ip_DisableChannel(STM_INST_0, CH_0);
-
-	/* Stop the timer */
-	Stm_Ip_StopTimer(STM_INST_0);
+	DeinitTimeoutTimerImpl();
 }
 
-void delay_at(uint32_t milliseconds){
-	uint32_t ms_count_conversion = 0;
 
-	/* Convert the milliseconds parameters to the specific counts required to reach */
-	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
 
-	/* Start the STM timer with a defined start value */
-	Stm_Ip_StartTimer(STM_INST_0, STM_START_CNT_VALUE);
-
-	/* Enable the compare channel as comparison will be monitored*/
-	Stm_Ip_EnableChannel(STM_INST_0, CH_0);
-
-	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
-	Stm_Ip_StartCounting(STM_INST_0, CH_0, ms_count_conversion);
-
-	while(!Stm_Ip_GetInterruptStatusFlag(STM_INST_0, CH_0)){
-		/* Wait for the counter to reach the compare value, in this case the ms_conversion */
-	}
-	/* Once complete, there is no need to clear the flag as it will be cleared in the next call, and the channel and
-	 * instance are disabled next
-	 */
-
-	/* Disable the compare channel as the comparison is no longer needed */
-	Stm_Ip_DisableChannel(STM_INST_0, CH_0);
-
-	/* Stop the timer */
-	Stm_Ip_StopTimer(STM_INST_0);
-}
-
-at_status send_at(char* s_buf1, char* s_buf2, uint8_t com1length, uint8_t com2length, uint8_t command_num, uint16_t delay_ms)
+uint8_t send_at(char* s_buf1, char* s_buf2, uint8_t com1length, uint8_t com2length, uint8_t command_num, uint16_t delay_ms)
 {
-	at_status command_status = AT_ERROR;
+	uint8_t command_status = 1;
 	uint32 T_timeout = 0x0000FFFF;
 	Lpuart_Uart_Ip_StatusType lpuartStatus = LPUART_UART_IP_STATUS_ERROR;
 	uint8_t error_msg[] = "\r\nNo response obtained\r\n";
@@ -114,15 +105,15 @@ at_status send_at(char* s_buf1, char* s_buf2, uint8_t com1length, uint8_t com2le
 			return command_status;
 		}
 
-		delay_at(1000);
+		DelayImpl(1000);
 
 	}else if(2 ==command_num){
 		/* Send 2 AT commands */
 		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)s_buf1, com1length, AT_TRANSMIT_TIMEOUT);
-		delay_at(1000);
+		DelayImpl(1000);
 
 		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)s_buf2, com2length, AT_TRANSMIT_TIMEOUT);
-		delay_at(2100);
+		DelayImpl(2100);
 
 	}
 
@@ -148,32 +139,19 @@ at_status send_at(char* s_buf1, char* s_buf2, uint8_t com1length, uint8_t com2le
 		return command_status;
 	}
 
-	command_status = AT_RESP_OK;
-	delay_at(delay_ms);
+	command_status = 0;
+	DelayImpl(delay_ms);
 
 	return command_status;
-
 }
 
-at_status sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms)
+uint8_t sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms)
 {
-	at_status command_status = AT_ERROR;
-	uint32 T_timeout = 0x0000FFFF;
-	Lpuart_Uart_Ip_StatusType lpuartStatus = LPUART_UART_IP_STATUS_ERROR;
+	uint8_t status = 1;
 
-	lpuartStatus = Lpuart_Uart_Ip_SyncSend(AT_UART_INSTANCE,(uint8_t *)s_buf1, com1length, T_timeout);
-	if (LPUART_UART_IP_STATUS_SUCCESS != lpuartStatus)
-	{
-		return command_status;
-	}
+	status = sendATImpl(s_buf1, com1length, delay_ms);
 
-	if(delay_ms > 0){
-		delay_at(delay_ms);
-	}
-
-	command_status = AT_SENT;
-
-	return command_status;
+	return status;
 }
 
 
@@ -185,7 +163,7 @@ void send_AT(uint8_t* pCmd){
 	streamWrite(AT, pCmd, AT_NL);
 }
 
-uint8_t waitResponseImpl(
+uint8_t waitResponse(
 		uint32_t timeout_ms,
 		uint8_t *data,
 		uint8_t *r1,
@@ -196,59 +174,9 @@ uint8_t waitResponseImpl(
 		uint8_t *r6,
 		uint8_t *r7)
 {
-	uint8_t index = 0;
 	uint8_t response = 0;
-	uint32_t startMillis = 0;
-	uint8_t character = 0;
 
-	if(timeout_ms == 0){
-		timeout_ms = 1000;
-	}
-	/* Verify for default values on r1 and r2 */
-	if(NULL_PTR == data){
-		data = Rx_Buffer;
-	}
-	if(NULL_PTR == r1){
-		r1 = GSM_OK;
-	}
-	if(NULL_PTR == r2){
-		r1 = GSM_ERROR;
-	}
-
-	InitTimeoutTimer(timeout_ms);
-
-	do{
-		Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&character, 1, 10000);
-		if (character <= 0){
-			continue;
-		}
-		*(data+index) = (uint8_t)character;
-		if(r1 && endsWith((const char*)data, (const char*)r1)){
-			response = 1;
-			break;
-		} else if (r2 && endsWith((const char*)data, (const char*)r2)){
-			response = 2;
-			break;
-		} else if (r3 && endsWith((const char*)data, (const char*)r3)){
-			response = 3;
-			break;
-		} else if (r4 && endsWith((const char*)data, (const char*)r4)){
-			response = 4;
-			break;
-		} else if (r5 && endsWith((const char*)data, (const char*)r5)){
-			response = 5;
-			break;
-		} else if (r6 && endsWith((const char*)data, (const char*)r6)){
-			response = 6;
-			break;
-		} else if (r7 && endsWith((const char*)data, (const char*)r7)){
-			response = 7;
-			break;
-		} else if (handleURCs((const char*)data)){
-
-		}
-
-	}while(GetCurrentTime() < timeout_ms);
+	response = waitResponseImpl(timeout_ms, data, r1, r2, r3, r4, r5, r6, r7);
 
 	return response;
 }
@@ -375,26 +303,7 @@ int GetIntBefore(char lastChar){
 	return -9999;
 }
 
-static bool handleURCs(const char *str){
-	bool result;
 
-	if(endsWith(str, "something")){
-		result = FALSE;
-	}
-
-	return result;
-
-}
-
-static bool endsWith(const char *str, const char *suffix){
-	if (!str || !suffix)
-		return 0;
-	size_t lenstr = strlen(str);
-	size_t lensuffix = strlen(suffix);
-	if (lensuffix >  lenstr)
-		return 0;
-	return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-}
 
 //// TODO(vshymanskyy): Optimize this!
 //int8_t waitResponseImpl(uint32_t timeout_ms, String& data,

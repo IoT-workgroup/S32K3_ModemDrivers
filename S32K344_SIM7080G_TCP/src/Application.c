@@ -17,17 +17,17 @@ extern char Resp_NotReady[];
 void power_down(void)
 {
 	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 30);
-	delay_at(2000);
+	DelayImpl(2000);
 	Siul2_Dio_Ip_ClearGPDO(SIUL2_INSTANCE, 30);
-	delay_at(2000);
+	DelayImpl(2000);
 }
 
 void power_sequence(void)
 {
 	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 30);
-	delay_at(2000);
+	DelayImpl(2000);
 	Siul2_Dio_Ip_ClearGPDO(SIUL2_INSTANCE, 30);
-	delay_at(2000);
+	DelayImpl(2000);
 }
 
 void test_functionality(uint8_t *msg_buffer, uint8_t msg_length ){
@@ -54,7 +54,7 @@ void test_functionality(uint8_t *msg_buffer, uint8_t msg_length ){
 	}
 
 	/* Delay in milliseconds */
-	delay_at(1000);
+	DelayImpl(1000);
 
 	/* Verify the UART sent */
 	lpuartStatus = Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)delay_msg, sizeof(delay_msg)-1, AT_TRANSMIT_TIMEOUT);
@@ -92,7 +92,7 @@ void tcp_test(void)
 {
 	power_sequence();
 	Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)"\r\nwait 15 seconds for signal\r\n\r\n",sizeof("\r\nwait 15 seconds for signal\r\n\r\n")-1, 0xFFFF);
-	delay_at(15000);
+	DelayImpl(15000);
 
 //	HAL_UART_Transmit(&huart2,(uint8_t *)CSQ,sizeof(CSQ)-1,0xff);
 	send_at(CSQ, NULL, sizeof(CSQ)-1, 0, 1, 1000);

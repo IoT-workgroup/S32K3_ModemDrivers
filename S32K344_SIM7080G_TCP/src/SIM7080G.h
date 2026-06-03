@@ -12,12 +12,17 @@
 
 #define AT_TRANSMIT_TIMEOUT 		(0xFFFFU)
 
-typedef enum{
-	AT_RESP_OK,
-	AT_SENT,
-	AT_ERROR
-} at_status;
-
+/**
+* @brief        Tests the functionality of the AT commands with the modem in serial communication.
+*
+* @api
+* @param[in]     Indicates the time in milliseconds to wait before a timeout occurs.
+* @return        Boolean value
+* @retval        True: AT command working as expected obtained.
+* @retval        False: AT commands communication failed.
+* implements     Test AT
+*/
+bool TestAT(uint32_t timeout_ms);
 
 /* Function to initialize the time-out timer */
 void InitTimeoutTimer(uint32_t milliseconds);
@@ -32,10 +37,12 @@ void DeinitTimeoutTimer(void);
 void delay_at(uint32_t milliseconds);
 
 
+
+
 uint8_t verifyResponse(char * pExpectedAnswers, uint8_t TotalExpAns);
-at_status send_at(char *s_buf1,char*s_buf2,uint8_t com1length,uint8_t com2length,uint8_t command_num,uint16_t delay_ms);
-at_status sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms);
-uint8_t waitResponseImpl(
+uint8_t send_at(char *s_buf1,char*s_buf2,uint8_t com1length,uint8_t com2length,uint8_t command_num,uint16_t delay_ms);
+uint8_t sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms);
+uint8_t waitResponse(
 		uint32_t timeout_ms,
 		uint8_t *data,
 		uint8_t *r1,

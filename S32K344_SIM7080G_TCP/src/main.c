@@ -29,9 +29,9 @@
 */
 
 /* User includes */
-#include "AT.h"
-#include "device_drivers.h"
+#include "S32K3_Drivers.h"
 #include "SIM7080G.h"
+#include "Application.h"
 #include "string.h"
 
 uint8_t test_msg[] = "Hello World!\r\n";

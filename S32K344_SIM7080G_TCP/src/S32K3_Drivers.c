@@ -16,16 +16,44 @@ char Resp_Puk[] 	= "SIM PUK";
 char Resp_Insrt[] 	= "NOT INSERTED";
 char Resp_NotReady[] = "NOT READY";
 
+static const char GSM_OK[] = "OK\r\n";
+static const char GSM_ERROR[] = "ERROR\r\n";
+
+uint8 InternalRx_Buffer[MAX_LEN] = {0};
+
 static uint8_t *sockets[MODEM_MUX_COUNT];
 static uint8_t *certificate[MODEM_MUX_COUNT];
-
-
 
 static bool TestATImpl(uint32_t timeout_ms);
 static SimStatus getSimStatusImpl(uint32_t timeout_ms);
 static int8_t getRegistrationStatusXREG(const char* regCommand);
 static bool isGprsConnectedImpl(void);
 static void getLocalIPImpl(uint8_t* localIP);
+
+static bool handleURCs(const char *str);
+
+static bool endsWith(const char *str, const char *suffix);
+
+static bool handleURCs(const char *str){
+	bool result;
+
+	if(endsWith(str, "something")){
+		result = FALSE;
+	}
+
+	return result;
+
+}
+
+static bool endsWith(const char *str, const char *suffix){
+	if (!str || !suffix)
+		return 0;
+	size_t lenstr = strlen(str);
+	size_t lensuffix = strlen(suffix);
+	if (lensuffix >  lenstr)
+		return 0;
+	return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
 
 void streamWrite(uint8_t* pAT, uint8_t* pCmd, uint8_t *pAT_NL){
 	/* Send AT start of command */
@@ -78,64 +106,218 @@ uint8_t streamSkipUntil
 	return status;
 }
 
+void DelayImpl(uint32_t milliseconds){
+	uint32_t ms_count_conversion = 0;
 
+	/* Convert the milliseconds parameters to the specific counts required to reach */
+	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
+
+	/* Start the STM timer with a defined start value */
+	Stm_Ip_StartTimer(STM_INST_0, STM_START_CNT_VALUE);
+
+	/* Enable the compare channel as comparison will be monitored*/
+	Stm_Ip_EnableChannel(STM_INST_0, CH_0);
+
+	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
+	Stm_Ip_StartCounting(STM_INST_0, CH_0, ms_count_conversion);
+
+	while(!Stm_Ip_GetInterruptStatusFlag(STM_INST_0, CH_0)){
+		/* Wait for the counter to reach the compare value, in this case the ms_conversion */
+	}
+	/* Once complete, there is no need to clear the flag as it will be cleared in the next call, and the channel and
+	 * instance are disabled next
+	 */
+
+	/* Disable the compare channel as the comparison is no longer needed */
+	Stm_Ip_DisableChannel(STM_INST_0, CH_0);
+
+	/* Stop the timer */
+	Stm_Ip_StopTimer(STM_INST_0);
+}
+
+/**
+* @brief       	Initialize S32K3 Low Level Drivers for serial communication and timers usage.
+*
+* @api
+* @param[in]	 N/A
+* @return        N/A
+* implements     S32K3 Initialization
+*/
 void init_device_drivers(void){
-    /* Init clock  */
+    /* Initialize S32K3 clock for the configured operation frequency  */
     Clock_Ip_Init(&Clock_Ip_aClockConfig[0]);
 
-    /* Initialize all pins */
+    /* Initialize all pins that are used for the application*/
     Siul2_Port_Ip_Init(NUM_OF_CONFIGURED_PINS_PortContainer_0_VS_0, g_pin_mux_InitConfigArr_PortContainer_0_VS_0);
 
-    /*Initial STM instance 0 - Channel 0*/
+    /*Initialize STM driver for STM instance 0 */
 	Stm_Ip_Init(STM_INST_0, &STM_0_InitConfig_PB_VS_0);
 
-	/*Initial channel 0 */
+	/*Initialize STM Instance 0 - channel 0 */
 	Stm_Ip_InitChannel(STM_INST_0, STM_0_ChannelConfig_PB_VS_0);
 
-	/* Enable the configured UART interrupts */
+	/* Enable the configured UART interrupts if any */
 	IntCtrl_Ip_Init(&IntCtrlConfig_0);
 
-    /* Initializes an UART driver*/
+    /* Initializes the UART driver */
     Lpuart_Uart_Ip_Init(DEBUG_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_3_VS_0);
 }
 
-static bool TestATImpl(uint32_t timeout_ms){
-	uint32_t time_measure = 0;
-	at_status status = AT_ERROR;
-	uint8_t response = 0;
 
-	/* Initialize the timeout timer to trigger timeout if required */
+/**
+* @brief       	Initialize the timer that will be used for timeout operations.
+*
+* @api
+* @param[in]	 milliseconds
+* @return        N/A
+* implements     Init Timeout Timer
+*/
+void InitTimeoutTimerImpl(uint32_t milliseconds){
+	uint32_t ms_count_conversion = 0;
+
+	/* Convert the milliseconds parameters to the specific counts required to reach */
+	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
+
+	/* Start the STM timer with a defined start value */
+	Stm_Ip_StartTimer(STM_INST_0, STM_START_CNT_VALUE);
+
+	/* Enable the compare channel as comparison will be monitored*/
+	Stm_Ip_EnableChannel(STM_INST_0, CH_0);
+
+	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
+	Stm_Ip_StartCounting(STM_INST_0, CH_0, ms_count_conversion);
+}
+
+/**
+* @brief       	Gets the ellapsed time on the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        Returns the ellapsed time in milliseconds of the running timer
+* implements     Get Current Time
+*/
+uint32_t GetCurrentTimeImpl(void){
+	uint32_t milliseconds = 0;
+
+	milliseconds = Stm_Ip_GetCounterValue(STM_INST_0);
+	milliseconds = milliseconds/(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
+
+	return milliseconds;
+}
+
+/**
+* @brief       	DeInitialize the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        N/A
+* implements     DeInitialize Timeout timer
+*/
+void DeinitTimeoutTimerImpl(void){
+	/* Disable the compare channel as the comparison is no longer needed */
+	Stm_Ip_DisableChannel(STM_INST_0, CH_0);
+
+	/* Stop the timer */
+	Stm_Ip_StopTimer(STM_INST_0);
+}
+
+/**
+* @brief       	DeInitialize the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        N/A
+* implements     DeInitialize Timeout timer
+*/
+uint8_t waitResponseImpl(
+		uint32_t timeout_ms,
+		uint8_t *data,
+		uint8_t *r1,
+		uint8_t *r2,
+		uint8_t *r3,
+		uint8_t *r4,
+		uint8_t *r5,
+		uint8_t *r6,
+		uint8_t *r7)
+{
+	uint8_t index = 0;
+	uint8_t response = 0;
+	uint32_t startMillis = 0;
+	uint8_t character = 0;
+
+	if(timeout_ms == 0){
+		timeout_ms = 1000;
+	}
+	/* Verify for default values on r1 and r2 */
+	if(NULL_PTR == data){
+		data = InternalRx_Buffer;
+	}
+	if(NULL_PTR == r1){
+		r1 = GSM_OK;
+	}
+	if(NULL_PTR == r2){
+		r1 = GSM_ERROR;
+	}
+
 	InitTimeoutTimer(timeout_ms);
 
 	do{
-		/* Send the test AT command over serial with a delay of 100ms */
-		status = sendAT("AT", strlen("AT"), 100);
-
-		if (status == AT_SENT){
-
-			response = waitResponseImpl(200, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-
-			if (response = 1){
-				return true;
-			}
+		Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&character, 1, 10000);
+		if (character <= 0){
+			continue;
 		}
-		/* Get current time passed */
-		time_measure = GetCurrentTime();
-	}while(time_measure < timeout_ms);
+		*(data+index) = (uint8_t)character;
+		if(r1 && endsWith((const char*)data, (const char*)r1)){
+			response = 1;
+			break;
+		} else if (r2 && endsWith((const char*)data, (const char*)r2)){
+			response = 2;
+			break;
+		} else if (r3 && endsWith((const char*)data, (const char*)r3)){
+			response = 3;
+			break;
+		} else if (r4 && endsWith((const char*)data, (const char*)r4)){
+			response = 4;
+			break;
+		} else if (r5 && endsWith((const char*)data, (const char*)r5)){
+			response = 5;
+			break;
+		} else if (r6 && endsWith((const char*)data, (const char*)r6)){
+			response = 6;
+			break;
+		} else if (r7 && endsWith((const char*)data, (const char*)r7)){
+			response = 7;
+			break;
+		} else if (handleURCs((const char*)data)){
 
+		}
 
-	// TODO: Implement timeout function
-	/* De-initialize the timer in case further is required */
-	DeinitTimeoutTimer();
+	}while(GetCurrentTime() < timeout_ms);
 
-	return false;
+	return response;
 }
 
+uint8_t sendATImpl(char* s_buf1, uint8_t com1length, uint16_t delay_ms)
+{
+	uint8_t command_status = 1;
+	uint32 T_timeout = 0x0000FFFF;
+	Lpuart_Uart_Ip_StatusType lpuartStatus = LPUART_UART_IP_STATUS_ERROR;
 
+	lpuartStatus = Lpuart_Uart_Ip_SyncSend(AT_UART_INSTANCE,(uint8_t *)s_buf1, com1length, T_timeout);
+	if (LPUART_UART_IP_STATUS_SUCCESS != lpuartStatus)
+	{
+		return command_status;
+	}
 
-bool TestAT(uint32_t timeout_ms) {
-  return TestATImpl(timeout_ms);
+	if(delay_ms > 0){
+		DelayImpl(delay_ms);
+	}
+
+	command_status = 0;
+
+	return command_status;
 }
+
 
 static SimStatus getSimStatusImpl(uint32_t timeout_ms) {
 	uint32_t time_measure = 0;
@@ -154,7 +336,7 @@ static SimStatus getSimStatusImpl(uint32_t timeout_ms) {
 
 		/* Verify that the response obtained first corresponds to +CPIN */
 		if (verifyResponse("+CPIN:", 1) != 1) {
-			delay_at(1000);
+			DelayImpl(1000);
 			continue;
 		}
 

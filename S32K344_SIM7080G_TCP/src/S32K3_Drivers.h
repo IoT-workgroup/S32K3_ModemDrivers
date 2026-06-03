@@ -78,13 +78,94 @@ typedef enum {
   REG_UNKNOWN      = 4,
 }SIM70xxRegStatus;
 
-/**********************************************************/
-/**********		    Function definition	      	***********/
-/**********************************************************/
-/* Function prototype for the initialization of the S32K3 drivers */
+/**********************************************************
+ **********		Global Functions definition   	***********
+ **********************************************************/
+
+/**
+* @brief       	Initialize S32K3 Low Level Drivers for serial communication and timers usage.
+*
+* @api
+* @return        N/A
+* implements     S32K3 Initialization
+*/
 void init_device_drivers(void);
+
+/**
+* @brief       	Generate a blocking delay to wait for a given amount of milliseconds.
+*
+* @api
+* @param[in]	milliseconds to wait in the delay
+* @return       N/A
+* implements    Blocking Delay
+*/
+void DelayImpl(uint32_t milliseconds);
+
+/**
+* @brief       	Initialize the timer that will be used for timeout operations.
+*
+* @api
+* @param[in]	 milliseconds
+* @return        N/A
+* implements     Init Timeout Timer
+*/
+void InitTimeoutTimerImpl(uint32_t milliseconds);
+
+/**
+* @brief       	Gets the ellapsed time on the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        Returns the ellapsed time in milliseconds of the running timer
+* implements     Get Current Time
+*/
+uint32_t GetCurrentTimeImpl(void);
+
+/**
+* @brief       	DeInitialize the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        N/A
+* implements     DeInitialize Timeout timer
+*/
+void DeinitTimeoutTimerImpl(void);
+
+/**
+* @brief       	DeInitialize the timer used for the timeout.
+*
+* @api
+* @param[in]	 N/A
+* @return        N/A
+* implements     DeInitialize Timeout timer
+*/
+uint8_t waitResponseImpl
+(
+		uint32_t timeout_ms,
+		uint8_t *data,
+		uint8_t *r1,
+		uint8_t *r2,
+		uint8_t *r3,
+		uint8_t *r4,
+		uint8_t *r5,
+		uint8_t *r6,
+		uint8_t *r7
+);
+
+/**
+* @brief       	Implementation of the Send AT function to send specific command over serial interface.
+*
+* @api
+* @param[in]	Pointer to the buffer containing the command to be sent
+* @param[in]	Length in bytes of the command to send
+* @param[in]	Delay to wait once the command was transferred
+* @return       Status value to indicate if the command was successfully transmitted (0 - OK | 1 - ERROR)
+* implements    Send AT
+*/
+uint8_t sendATImpl(char* s_buf1, uint8_t com1length, uint16_t delay_ms);
+
 void streamWrite(uint8_t* pAT, uint8_t* pCmd, uint8_t *pAT_NL);
-bool TestAT(uint32_t timeout_ms);
+
 SimStatus getSimStatus(uint32_t timeout_ms);
 bool setNetworkMode(char* pMode);
 int getNetworkMode(void);
