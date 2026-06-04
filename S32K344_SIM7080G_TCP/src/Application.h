@@ -20,6 +20,8 @@
 #define CACLOSE						"AT+CLOSE=0\r\n"
 #define DIS_CNCAT					"AT+CNACT=0,0\r\n"
 
+#define AT_TRANSMIT_TIMEOUT 		(0xFFFFU)
+
 void power_dowm(void);
 void power_up(void);
 void test_functionality(uint8_t *msg_buffer, uint8_t msg_length );

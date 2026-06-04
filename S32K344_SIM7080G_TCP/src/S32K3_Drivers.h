@@ -56,31 +56,12 @@
 
 #define MODEM_MUX_COUNT 			(12U)
 
-typedef enum {
-  SIM_ERROR            = 0,
-  SIM_READY            = 1,
-  SIM_LOCKED           = 2,
-  SIM_ANTITHEFT_LOCKED = 3,
-} SimStatus;
 
-typedef union {
-	uint8_t bytes[4];  // IPv4 address
-	uint32_t dword;
-} IP_address;
 
-typedef enum {
-  REG_NO_RESULT    = -1,
-  REG_UNREGISTERED = 0,
-  REG_SEARCHING    = 2,
-  REG_DENIED       = 3,
-  REG_OK_HOME      = 1,
-  REG_OK_ROAMING   = 5,
-  REG_UNKNOWN      = 4,
-}SIM70xxRegStatus;
 
-/**********************************************************
- **********		Global Functions definition   	***********
- **********************************************************/
+/*****************************************************************************************
+ ************************* GLOBAL FUNCTION DEFINITIONS ***********************************
+ *****************************************************************************************/
 
 /**
 * @brief       	Initialize S32K3 Low Level Drivers for serial communication and timers usage.
@@ -121,6 +102,7 @@ void InitTimeoutTimerImpl(uint32_t milliseconds);
 */
 uint32_t GetCurrentTimeImpl(void);
 
+
 /**
 * @brief       	DeInitialize the timer used for the timeout.
 *
@@ -132,60 +114,87 @@ uint32_t GetCurrentTimeImpl(void);
 void DeinitTimeoutTimerImpl(void);
 
 /**
-* @brief       	DeInitialize the timer used for the timeout.
+* @brief       	Implementation of the Wait Response logic implemented using S32K3 serial reception functions.
 *
 * @api
-* @param[in]	 N/A
-* @return        N/A
-* implements     DeInitialize Timeout timer
+* @param[in]	Timeout value in milliseconds to wait for the full response to be received
+* @param[in]	Pointer to the Data buffer where the received string will be stored and compared from. If NULL_PTR is given, then internal RX buffer is used.
+* @param[in]	Pointer to the first expected response. If NULL_PTR is given, then it will be default to expected GSM_OK.
+* @param[in]	Pointer to the second expected response. If NULL_PTR is given, then it will be default to expected GSM_ERROR.
+* @param[in]	Pointer to the third expected response. No default value given.
+* @param[in]	Pointer to the fourth expected response. No default value given.
+* @param[in] 	Pointer to the fifth expected response. No default value given.
+* @param[in]	Pointer to the sixth expected response. No default value given.
+* @param[in]	Pointer to the seventh expected response. No default value given.
+* @return       The number of the expected response that matches the actually received response. A value of 0 indicates that a timeout occurred and there was no match found.
+* implements    WaitResponseImpl
 */
 uint8_t waitResponseImpl
 (
 		uint32_t timeout_ms,
-		uint8_t *data,
-		uint8_t *r1,
-		uint8_t *r2,
-		uint8_t *r3,
-		uint8_t *r4,
-		uint8_t *r5,
-		uint8_t *r6,
-		uint8_t *r7
+		char *pData,
+		const char *pR1,
+		const char *pR2,
+		const char *pR3,
+		const char *pR4,
+		const char *pR5,
+		const char *pR6,
+		const char *pR7
 );
 
 /**
-* @brief       	Implementation of the Send AT function to send specific command over serial interface.
+* @brief       	S32K3 implementation of the function to send specific AT command over serial interface.
 *
 * @api
 * @param[in]	Pointer to the buffer containing the command to be sent
 * @param[in]	Length in bytes of the command to send
-* @param[in]	Delay to wait once the command was transferred
 * @return       Status value to indicate if the command was successfully transmitted (0 - OK | 1 - ERROR)
-* implements    Send AT
+* implements    Send AT Impl
 */
-uint8_t sendATImpl(char* s_buf1, uint8_t com1length, uint16_t delay_ms);
-
-void streamWrite(uint8_t* pAT, uint8_t* pCmd, uint8_t *pAT_NL);
-
-SimStatus getSimStatus(uint32_t timeout_ms);
-bool setNetworkMode(char* pMode);
-int getNetworkMode(void);
-bool setPreferredMode(char* pMode);
-int getPreferredMode(void);
-SIM70xxRegStatus getRegistrationStatus(void);
-bool isGprsConnected(void);
-IP_address IPAddress(uint8_t first_octet, uint8_t second_octet, uint8_t third_octet, uint8_t fourth_octet);
-IP_address localIP(void);
-void getLocalIP(uint8_t* localIP);
-IP_address IpFromString(uint8_t* IPstring);
-
-/** @brief 	Implementation of StreamSkipUntil, the idea is to allow to detec specific characters in the reception
- * 	@details
- * 			Iteration over the reception array to detect a specific character and continue the operation indicating to the
- * 			application that either the character was found or there was a timeout.
- */
-uint8_t streamSkipUntil
+uint8_t sendATImpl
 (
-	uint8_t expectedChar,
+	const char* pData,
+	uint8_t dataLength
+);
+
+/**
+* @brief       Implementation of StreamSkipUntil, it allows to detect specific characters in the reception and skip over until that character is received.
+*
+* @api
+* @param[in]	Expected character to find in the serial reception.
+* @param[in]	Delay to wait once the command was transferred.
+* @return       Boolean value to indicate if the character was found or a timeout occurred.
+* implements    StreamSkipUntilImpl
+*/
+bool streamSkipUntilImpl
+(
+	const char expectedChar,
 	uint32_t timeout_ms
 );
+
+/**
+* @brief       Obtain the integer value from reception until reaching the indicated last character value.
+*
+* @api
+* @param[in]	Character that indicates the ends of the integer.
+* @return       Integer value that is obtained before the indicated character.
+* implements    GetIntBeforeImpl
+*/
+int GetIntBeforeImpl
+(
+	const char lastChar
+);
+
+/**
+* @brief       Obtain the integer value from reception until no more integers are received.
+*
+* @api
+* @param[in]	N/A
+* @return       Integer value that is obtained from the serial reception.
+* 				If 0xFFFF, then an error occurred.
+* implements    GetIntBeforeImpl
+*/
+int GetIntResponseImpl(void);
+
+
 #endif /* S32K3_DRIVERS_H_ */

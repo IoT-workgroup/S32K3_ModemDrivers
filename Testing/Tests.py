@@ -11,21 +11,30 @@ baudrate = 115200
 
 # Create serial port object to communicate via serial bus
 try:
-    SerialPort = serial.Serial(port, baudrate, timeout=None)
+    SerialPort = serial.Serial('COM30', baudrate, timeout=None)
+    print(SerialPort)
 except:
     # In case that the serial port was not able to be created, then report the issue and quit the program
     print("Serial Port object creation failed, please check the inputs of the program and try again")
-    print(serial.tools.list_ports.comports())
+    #print(serial.tools.list_ports.comports())
     quit()
 
 def TestAT(void):
     SerialPort.write("OK\n\r")
+
+def Test
     
 def attend_command(at_command):
     match at_command:
         case "AT":
+            print("Test case AT without command")
             # Execute testing of the TestAT case
             TestAT()
+        
+        case "AT+CPIN?"
+
+        case _:
+            print("Received command is not recognized or is incorrect")
 
 while True:
     # This is the main loop of execution where the test will take place depending on the AT command received

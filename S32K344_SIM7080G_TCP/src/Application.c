@@ -74,13 +74,6 @@ void test_functionality(uint8_t *msg_buffer, uint8_t msg_length ){
 	{
 	}
 
-	/* Probar respuesta */
-	response = verifyResponse((char*)NULL_PTR, 0);
-
-	response = verifyResponse(pExpectedResponse, 5);
-
-	response = verifyResponse("+PRUEBA:", 1);
-
 	value = GetIntResponse();
 
 	while(1){
@@ -88,39 +81,39 @@ void test_functionality(uint8_t *msg_buffer, uint8_t msg_length ){
 	}
 }
 
-void tcp_test(void)
-{
-	power_sequence();
-	Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)"\r\nwait 15 seconds for signal\r\n\r\n",sizeof("\r\nwait 15 seconds for signal\r\n\r\n")-1, 0xFFFF);
-	DelayImpl(15000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)CSQ,sizeof(CSQ)-1,0xff);
-	send_at(CSQ, NULL, sizeof(CSQ)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)QUERY_CPSI,sizeof(QUERY_CPSI)-1,0xff);
-	send_at(QUERY_CPSI, NULL, sizeof(QUERY_CPSI)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)EN_CNACT,sizeof(EN_CNACT)-1,0xff);
-	send_at(EN_CNACT, NULL, sizeof(EN_CNACT)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)CACID,sizeof(CACID)-1,0xff);
-	send_at(CACID, NULL, sizeof(CACID)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)CAOPEN,sizeof(CAOPEN)-1,0xff);
-	send_at(CAOPEN, NULL, sizeof(CAOPEN)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)CASEND,sizeof(CASEND)-1,0xff);
-//	HAL_UART_Transmit(&huart2,(uint8_t *)MESSAGES,sizeof(MESSAGES)-1,0xff);
-//	HAL_UART_Transmit(&huart2,(uint8_t *)"\r\n",2,0xff);
-	send_at(CASEND, MESSAGES, sizeof(CASEND)-1, sizeof(MESSAGES)-1, 2, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)CACLOSE,sizeof(CACLOSE)-1,0xff);
-	send_at(CACLOSE, NULL, sizeof(CACLOSE)-1, 0, 1, 1000);
-
-//	HAL_UART_Transmit(&huart2,(uint8_t *)DIS_CNCAT,sizeof(DIS_CNCAT)-1,0xff);
-	send_at(DIS_CNCAT, NULL, sizeof(DIS_CNCAT)-1, 0, 1, 1000);
-	power_sequence();
-}
+//void tcp_test(void)
+//{
+//	power_sequence();
+//	Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)"\r\nwait 15 seconds for signal\r\n\r\n",sizeof("\r\nwait 15 seconds for signal\r\n\r\n")-1, 0xFFFF);
+//	DelayImpl(15000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)CSQ,sizeof(CSQ)-1,0xff);
+//	send_at(CSQ, NULL, sizeof(CSQ)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)QUERY_CPSI,sizeof(QUERY_CPSI)-1,0xff);
+//	send_at(QUERY_CPSI, NULL, sizeof(QUERY_CPSI)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)EN_CNACT,sizeof(EN_CNACT)-1,0xff);
+//	send_at(EN_CNACT, NULL, sizeof(EN_CNACT)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)CACID,sizeof(CACID)-1,0xff);
+//	send_at(CACID, NULL, sizeof(CACID)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)CAOPEN,sizeof(CAOPEN)-1,0xff);
+//	send_at(CAOPEN, NULL, sizeof(CAOPEN)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)CASEND,sizeof(CASEND)-1,0xff);
+////	HAL_UART_Transmit(&huart2,(uint8_t *)MESSAGES,sizeof(MESSAGES)-1,0xff);
+////	HAL_UART_Transmit(&huart2,(uint8_t *)"\r\n",2,0xff);
+//	send_at(CASEND, MESSAGES, sizeof(CASEND)-1, sizeof(MESSAGES)-1, 2, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)CACLOSE,sizeof(CACLOSE)-1,0xff);
+//	send_at(CACLOSE, NULL, sizeof(CACLOSE)-1, 0, 1, 1000);
+//
+////	HAL_UART_Transmit(&huart2,(uint8_t *)DIS_CNCAT,sizeof(DIS_CNCAT)-1,0xff);
+//	send_at(DIS_CNCAT, NULL, sizeof(DIS_CNCAT)-1, 0, 1, 1000);
+//	power_sequence();
+//}
 
 bool isConnect(void){
 	sendAT("+SMSTATE?", sizeof("+SMSTATE?"), 0);

@@ -6,17 +6,253 @@
  */
 
 #include "SIM7080G.h"
-
+#include "S32K3_Drivers.h"
 #include <string.h>
 #include <stdlib.h>
-#include "Lpuart_Uart_Ip.h"
-#include "Stm_Ip.h"
 
-#include "S32K3_Drivers.h"
+static uint8_t *sockets[MODEM_MUX_COUNT];
+static uint8_t *certificate[MODEM_MUX_COUNT];
 
 uint32 remainingBytes = 0;
 uint8 Rx_Buffer[MAX_LEN] = {0};
 
+/**
+* @brief       	Generate a blocking delay to wait for a given amount of milliseconds.
+*
+* @api
+* @param[in]	milliseconds to wait in the delay
+* @return       N/A
+* implements    Blocking Delay
+*/
+void Delay(uint32_t milliseconds){
+	DelayImpl(milliseconds);
+}
+
+/**
+* @brief       	Calls for the MCU implementation to initialize the assigned timeout timer.
+*
+* @api
+* @param[in]	milliseconds to indicate the timeout
+* @return       N/A
+* implements    InitTimeoutTimer
+*/
+void InitTimeoutTimer(uint32_t milliseconds){
+
+	/* Calls for the implementation of the initialization of the timeout timer on the specific MCU */
+	InitTimeoutTimerImpl(milliseconds);
+
+}
+
+/**
+* @brief       	Reads the current value of the timeout timer.
+*
+* @api
+* @param[in]	N/A
+* @return       The current ellapsed time of the timeout timer
+* implements    GetCurrentTime
+*/
+uint32_t GetCurrentTime(void){
+	uint32_t milliseconds = 0;
+
+	milliseconds = GetCurrentTimeImpl();
+
+	return milliseconds;
+}
+
+/**
+* @brief       	Calls for the De-Initialization of the timeout timer defined by the MCU.
+*
+* @api
+* @param[in]	N/A
+* @return       N/A
+* implements    DeinitTimeoutTimer
+*/
+void DeinitTimeoutTimer(void){
+	DeinitTimeoutTimerImpl();
+}
+
+/**
+* @brief       Calls for the implementation of streamSkipUntil, it allows to detect specific characters in the reception and skip over until that character is received.
+*
+* @api
+* @param[in]	Expected character to find in the serial reception.
+* @param[in]	Delay to wait once the command was transferred.
+* @return       Boolean value to indicate if the character was found or a timeout occurred.
+* implements    StreamSkipUntil
+*/
+bool streamSkipUntil
+(
+	const char expectedChar,
+	uint32_t timeout_ms
+)
+{
+	bool status = 0;
+
+	/* Call for the specific implementation due to the reception being managed by the MCU */
+	status = streamSkipUntilImpl(expectedChar, timeout_ms);
+
+	/* Returned the obtained status, if the character was found or a timeout occurred */
+	return status;
+}
+
+/**
+* @brief       Calls for the implementation to obtain the integer value from reception until reaching the indicated last character value.
+*
+* @api
+* @param[in]	Character that indicates the ends of the integer.
+* @return       Integer value that is obtained before the indicated character.
+* implements    GetIntBefore
+*/
+int GetIntBefore(char lastChar){
+	int value = 0;
+
+	/* Call for the implementation of the GetIntBefore as it depends on the reception managed by the MCU */
+	value = GetIntBeforeImpl(lastChar);
+
+	return value;
+}
+
+/**
+* @brief       Calls for the implementation to obtain the integer value from reception until no more integers are received.
+*
+* @api
+* @param[in]	N/A
+* @return       Integer value that is obtained from the serial reception.
+* 				If 0xFFFF, then an error occurred.
+* implements    GetIntBefore
+*/
+int GetIntResponse(void){
+	int value = 0;
+
+	/* Call for the implementation of the GetIntResponse as it depends on the reception managed by the MCU */
+	value = GetIntResponseImpl();
+
+	return value;
+}
+
+/**
+* @brief       Transforms the received parameters into an IP Address Structure.
+*
+* @api
+* @param[in]	first byte to fill the IP address with
+* @param[in]	Second byte to fill the IP address with
+* @param[in]	Third byte to fill the IP address with
+* @param[in]	Fourth byte to fill the IP address with
+* @return       Filled structure with the corresponding values of the IP Address
+* implements    IPAddress constructor
+*/
+IP_address IPAddress(uint8_t first_octet, uint8_t second_octet, uint8_t third_octet, uint8_t fourth_octet) {
+    IP_address tempIP;
+
+    tempIP.bytes[0] = 0;
+	tempIP.bytes[1] = 0;
+	tempIP.bytes[2] = 0;
+	tempIP.bytes[3] = 0;
+
+    tempIP.bytes[0] = first_octet;
+    tempIP.bytes[1] = second_octet;
+    tempIP.bytes[2] = third_octet;
+    tempIP.bytes[3] = fourth_octet;
+
+    return tempIP;
+}
+
+/**
+* @brief       Verifies if two IP Addresses are the same
+*
+* @api
+* @param[in]	First IP address to analyze
+* @param[in]	Second IP address to analyze
+* @return       Boolean value indicating if the two IP addresses are the same or not
+* implements    compareIP
+*/
+bool compareIP(IP_address IP1, IP_address IP2){
+	return (IP1.dword == IP2.dword);
+}
+
+/**
+* @brief       Generates an IP Address structure from an array
+*
+* @api
+* @param[in]	Pointer to the address of the first element for the IP String Array
+* @return       IP Address structure filled out with the values of the string.
+* implements    IpFromString
+*/
+IP_address IpFromString(uint8_t* IPstring){
+	uint8_t Parts[4] = {0};
+
+	Parts[0] = IPstring[0];
+	Parts[1] = IPstring[1];
+	Parts[2] = IPstring[2];
+	Parts[3] = IPstring[3];
+
+	return IPAddress(Parts[0], Parts[1], Parts[2], Parts[3]);
+}
+
+/**
+* @brief        Calls for the implementation of the Wait Response on the specific device.
+*
+* @api
+* @param[in]	Timeout value in milliseconds to wait for the full response to be received
+* @param[in]	Pointer to the Data buffer where the received string will be stored and compared from. If NULL_PTR is given, then internal RX buffer is used.
+* @param[in]	Pointer to the first expected response. If NULL_PTR is given, then it will be default to expected GSM_OK.
+* @param[in]	Pointer to the second expected response. If NULL_PTR is given, then it will be default to expected GSM_ERROR.
+* @param[in]	Pointer to the third expected response. No default value given.
+* @param[in]	Pointer to the fourth expected response. No default value given.
+* @param[in] 	Pointer to the fifth expected response. No default value given.
+* @param[in]	Pointer to the sixth expected response. No default value given.
+* @param[in]	Pointer to the seventh expected response. No default value given.
+* @return       The number of the expected response that matches the actually received response. A value of 0 indicates that a timeout occurred and there was no match found.
+* implements    WaitResponse
+*/
+uint8_t waitResponse(
+		uint32_t timeout_ms,
+		char *pData,
+		const char *pR1,
+		const char *pR2,
+		const char *pR3,
+		const char *pR4,
+		const char *pR5,
+		const char *pR6,
+		const char *pR7
+)
+{
+	uint8_t response = 0;
+
+	response = waitResponseImpl(timeout_ms, pData, pR1, pR2, pR3, pR4, pR5, pR6, pR7);
+
+	return response;
+}
+
+/**
+* @brief       	Implementation of the Send AT function to send specific command over serial interface.
+*
+* @api
+* @param[in]	Pointer to the buffer containing the command to be sent
+* @param[in]	Length in bytes of the command to send
+* @param[in]	Time in milliseconds to wait once the AT command was sent
+* @return       Status value to indicate if the command was successfully transmitted (0 - OK | 1 - ERROR)
+* implements    Send AT
+*/
+uint8_t sendAT
+(
+	const char* pData,
+	uint8_t dataLength,
+	uint16_t delay_ms
+)
+{
+	uint8_t status = 1;
+
+	/* Send the indicated data through implemented interface */
+	status = sendATImpl(pData, dataLength);
+
+	/* Wait for a specific amount of time */
+	if(delay_ms > 0){
+		Delay(delay_ms);
+	}
+
+	return status;
+}
 
 /**
 * @brief        Tests the functionality of the AT commands with the modem in serial communication.
@@ -60,332 +296,234 @@ bool TestAT(uint32_t timeout_ms) {
 	return false;
 }
 
-void InitTimeoutTimer(uint32_t milliseconds){
+IP_address getLocalIP(void){
+	uint8_t tmpIP[4] = {0};
+	IP_address localIP;
 
-	/* Calls for the implementation of the initialization of the timeout timer on the specific MCU */
-	InitTimeoutTimerImpl(milliseconds);
+	/* Clean the local IP structure */
+	localIP.bytes[0] = 0;
+	localIP.bytes[1] = 0;
+	localIP.bytes[2] = 0;
+	localIP.bytes[3] = 0;
 
+	/* Send the command to retrieve the local IP of the SIM */
+	sendAT("+CNACT?", sizeof("+CNACT?"), 0);
+	if(1 != waitResponseImpl(0, NULL_PTR, "\r\n+CNACT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		tmpIP[0] = '\0';
+	}
+	/* Wait for the message to send \" */
+	waitResponse(0, NULL_PTR, "\"", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	/* Store the received string in received localIP */
+	waitResponse(0, (char*)tmpIP, "", "\"", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	/* Wait for the OK response */
+	waitResponse(0, (char*)tmpIP, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	/* Translate the IP from string to IP structure */
+	localIP = IpFromString(tmpIP);
+
+	/* Return local IP with the specified structure */
+	return localIP;
 }
 
-uint32_t GetCurrentTime(void){
-	uint32_t milliseconds = 0;
+SimStatus getSimStatus(uint32_t timeout_ms){
+	uint32_t time_measure = 0;
+	uint8_t status = 0;
 
-	milliseconds = GetCurrentTimeImpl();
+	char Resp_Ready[] 	= "READY";
+	char Resp_Pin[] 	= "SIM PIN";
+	char Resp_Puk[] 	= "SIM PUK";
+	char Resp_Insrt[] 	= "NOT INSERTED";
+	char Resp_NotReady[] = "NOT READY";
 
-	return milliseconds;
-}
+	/* Initialize the timeout timer to trigger timeout if required */
+	InitTimeoutTimer(timeout_ms);
 
-void DeinitTimeoutTimer(void){
-	DeinitTimeoutTimerImpl();
-}
+	/* Proceed with the retrieve sequence until the timeout is reached or
+	 * a response is obtained from the SIM
+	 */
+	do{
+		/* Send AT command to retrieve the status of the SIM */
+		sendAT("+CPIN?", strlen("+CPIN?"), 1000);
 
-
-
-uint8_t send_at(char* s_buf1, char* s_buf2, uint8_t com1length, uint8_t com2length, uint8_t command_num, uint16_t delay_ms)
-{
-	uint8_t command_status = 1;
-	uint32 T_timeout = 0x0000FFFF;
-	Lpuart_Uart_Ip_StatusType lpuartStatus = LPUART_UART_IP_STATUS_ERROR;
-	uint8_t error_msg[] = "\r\nNo response obtained\r\n";
-	uint8_t *p_ok = NULL;
-
-	/* Enable the UART reception with Async interface */
-	do
-	{
-		lpuartStatus = Lpuart_Uart_Ip_AsyncReceive(DEBUG_UART_INSTANCE, Rx_Buffer, MAX_LEN);
-	}while(LPUART_UART_IP_STATUS_SUCCESS != lpuartStatus);
-
-	/* Verify the type of AT command to send */
-	if(1 == command_num){
-		/* Send only 1 AT command */
-
-		lpuartStatus = Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)s_buf1, com1length, AT_TRANSMIT_TIMEOUT);
-		if (LPUART_UART_IP_STATUS_SUCCESS != lpuartStatus)
-		{
-			return command_status;
+		/* Verify that the response obtained first corresponds to +CPIN */
+		if (waitResponse(0, NULL_PTR, "+CPIN:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR) != 1) {
+			Delay(1000);
+			continue;
 		}
 
-		DelayImpl(1000);
+		/* Verify that the response obtained matches one of the possible 5 answers */
+		status = waitResponse(0, NULL_PTR, Resp_Ready, Resp_Pin, Resp_Puk, Resp_Insrt, Resp_NotReady, NULL_PTR, NULL_PTR);
 
-	}else if(2 ==command_num){
-		/* Send 2 AT commands */
-		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)s_buf1, com1length, AT_TRANSMIT_TIMEOUT);
-		DelayImpl(1000);
+		/* Wait until next response is obtained */
+		waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
-		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)s_buf2, com2length, AT_TRANSMIT_TIMEOUT);
-		DelayImpl(2100);
+		/* Analyze if the response obtained matches "READY",
+		 * otherwise it will report and error code
+		 */
+		switch (status) {
+		case 2:
+			return SIM_ERROR;
+		case 3:
+			return SIM_LOCKED;
+		case 1:
+			return SIM_READY;
+		default:
+			return SIM_ERROR;
+		}
+	}while(time_measure < timeout_ms);
 
-	}
-
-	/* TODO: Analizar la similitud con el codigo de ST */
-	// Verify that the UART message was received and that it has finished
-	do
-	{
-		lpuartStatus = Lpuart_Uart_Ip_GetReceiveStatus(DEBUG_UART_INSTANCE, &remainingBytes);
-	} while (LPUART_UART_IP_STATUS_BUSY == lpuartStatus && 0 < T_timeout--);
-
-	// Analyze the received buffer and make sure that it contains an OK response.
-	p_ok = (uint8_t*)strstr((char *)Rx_Buffer,"OK");
-
-	if(NULL != p_ok){
-		// Print out the buffer received from the modem to the debugging interface
-		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)Rx_Buffer,(uint32)(p_ok-Rx_Buffer), AT_TRANSMIT_TIMEOUT);
-		Lpuart_Uart_Ip_AbortReceivingData(DEBUG_UART_INSTANCE);
-
-	}else{
-		Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)error_msg, sizeof(error_msg)-1, AT_TRANSMIT_TIMEOUT);
-		Lpuart_Uart_Ip_AbortReceivingData(DEBUG_UART_INSTANCE);
-
-		return command_status;
-	}
-
-	command_status = 0;
-	DelayImpl(delay_ms);
-
-	return command_status;
+	/* If a timeout ocurred, the return value is SIM_ERROR */
+	return SIM_ERROR;
 }
 
-uint8_t sendAT(char* s_buf1, uint8_t com1length, uint16_t delay_ms)
-{
-	uint8_t status = 1;
 
-	status = sendATImpl(s_buf1, com1length, delay_ms);
+bool setNetworkMode(const char* pMode) {
+	// 2 Automatic
+	// 13 GSM only
+	// 38 LTE only
+	sendAT("+CNMP=", strlen("+CNMP="), 0);
+	sendAT(pMode, strlen(pMode), 100);
+
+	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		return true;
+	} else {
+		return false;
+	}
+
+	return false;
+}
+
+int getNetworkMode(void) {
+	int mode = 0;
+
+	sendAT("+CNMP?", strlen("+CNMP?"), 100);
+
+	if (1 != waitResponse(0, NULL_PTR, "\r\n+CNMP?", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		mode = -9999;
+		return mode;
+	}
+
+	mode = GetIntResponse();
+
+	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	return mode;
+}
+
+bool setPreferredMode(char* pMode) {
+	// 1 CAT-M
+	// 2 NB-IoT
+	// 3 CAT-M and NB-IoT
+	bool status = false;
+
+	/* Send the AT command to set the preferred mode in the SIM */
+	sendAT("+CMNB=", strlen("+CMNB="), 0);
+	/* Send the specific mode that needs to be set in the SIM */
+	sendAT(pMode, strlen(pMode), 100);
+
+	/* Wait to receive an OK response, with default value */
+	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		status = true;
+	} else {
+		status = false;
+	}
+
+	/* Return end status */
+	return status;
+}
+
+int getPreferredMode(void) {
+	int mode = 0;
+
+	/* Send the AT command to request the preferred mode configured in the SIM */
+	sendAT("+CMNB?", strlen("+CMNB?"), 100);
+
+	/* Wait to receive the specific response indicating that the following number is the mode that is assigned*/
+	if (1 != waitResponse(0, NULL_PTR, "\r\n+CMNB:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		mode = -1;
+		return mode;
+	}
+
+	/* Wait to retrieve the specific mode from the SIM */
+	mode = GetIntResponse();
+
+	/* Wait to receive a successful response */
+	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	/* Return end status */
+	return mode;
+}
+
+bool isGprsConnected(void) {
+	IP_address localIP;
+	IP_address cmpIP = {0};
+
+	int res = 0;
+	sendAT("+CGATT?", sizeof("+CGATT?"), 0);
+	if(1 != waitResponse(0, NULL_PTR, "+CGATT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		return false;
+	}
+	res = GetIntBefore('\n');
+	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	if(res != 1){
+		return false;
+	}
+
+	localIP = getLocalIP();
+
+	if (!compareIP(localIP, cmpIP)){
+
+	}
+
+	return false;
+}
+
+/****************************************************************
+ * 	Gets the modem's registration status via CREG/CGREG/CEREG:  *
+ * 		CREG = Generic network registration                     *
+ * 		CGREG = GPRS service registration                       *
+ * 		CEREG = EPS registration for LTE modules                *
+ ****************************************************************/
+
+int8_t getRegistrationStatusXREG(const char* regCommand){
+	char CREG[] = "+CREG:";
+	char CGREG[] = "+CGREG:";
+	char CEREG[] = "+CEREG:";
+	uint8_t resp = 0;
+	int8_t status = 0;
+
+	sendAT("+", strlen("+"), 0);
+	sendAT(regCommand, strlen(regCommand), 0);
+	sendAT("?", strlen("?"), 0);
+
+	/* Read the expected response comparing against CREG, CGREG and CEREG */
+	resp = waitResponse(0, NULL_PTR, CREG, CGREG, CEREG, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	if(resp != 1 && resp != 2 && resp != 3){
+		status = 0;
+	} else {
+		streamSkipUntil(',', 0);
+
+		status = GetIntResponse();
+		waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
 
 	return status;
 }
 
+SIM70xxRegStatus getRegistrationStatus(void){
+	SIM70xxRegStatus epsStatus = REG_NO_RESULT;
 
-void send_AT(uint8_t* pCmd){
-	uint8_t AT[] = "AT";
-	uint8_t AT_NL[] = "\r\n";
+	epsStatus = (SIM70xxRegStatus)getRegistrationStatusXREG("CEREG");
+	  // If we're connected on EPS, great!
+	  if ((epsStatus == REG_OK_HOME) || (epsStatus == REG_OK_ROAMING)) {
+	    return epsStatus;
+	  } else {
+	    // Otherwise, check GPRS network status
+	    // We could be using GPRS fall-back or the board could be being moody
+	    return (SIM70xxRegStatus)getRegistrationStatusXREG("CGREG");
+	  }
 
-	/* Send a stream through serial with "AT", the command and the New Line */
-	streamWrite(AT, pCmd, AT_NL);
+	return epsStatus;
 }
 
-uint8_t waitResponse(
-		uint32_t timeout_ms,
-		uint8_t *data,
-		uint8_t *r1,
-		uint8_t *r2,
-		uint8_t *r3,
-		uint8_t *r4,
-		uint8_t *r5,
-		uint8_t *r6,
-		uint8_t *r7)
-{
-	uint8_t response = 0;
-
-	response = waitResponseImpl(timeout_ms, data, r1, r2, r3, r4, r5, r6, r7);
-
-	return response;
-}
-
-uint8_t verifyResponse(char * pExpectedAnswers, uint8_t TotalExpAns){
-	char lastChar = 0;
-	Lpuart_Uart_Ip_StatusType lpuartStatus = LPUART_UART_IP_STATUS_ERROR;
-	uint8_t i = 0;
-	uint8_t currentIndex = 0;
-	uint8_t match = 0;
-
-	memset(Rx_Buffer, 0, MAX_LEN);
-
-	/* Enable the UART reception with Async interface */
-	do
-	{
-		lpuartStatus = Lpuart_Uart_Ip_AsyncReceive(AT_UART_INSTANCE, Rx_Buffer, MAX_LEN);
-	}while(LPUART_UART_IP_STATUS_SUCCESS != lpuartStatus);
-
-	// Verify that the UART message was received and that it has finished
-	do
-	{
-		lpuartStatus = Lpuart_Uart_Ip_GetReceiveStatus(AT_UART_INSTANCE, &remainingBytes);
-		currentIndex = MAX_LEN - remainingBytes - 1;
-		if(currentIndex > 1){
-			lastChar = Rx_Buffer[currentIndex];
-		}
-	} while ((LPUART_UART_IP_STATUS_BUSY == lpuartStatus) && (lastChar != '\n'));
-
-	/* Finish the UART communication as the last Line Feed \n was received */
-	Lpuart_Uart_Ip_AbortReceivingData(AT_UART_INSTANCE);
-
-	if (TotalExpAns == 0){
-		if(NULL_PTR != strstr((char*)Rx_Buffer, "OK")){
-			match = 1;
-		} else if(NULL_PTR != strstr((char*)Rx_Buffer, "ERROR")){
-			match = 2;
-		}
-	}
-	if (TotalExpAns == 1){
-		if(NULL_PTR != strstr((char*)Rx_Buffer, pExpectedAnswers)){
-			match = 1;
-		}else if(NULL_PTR != strstr((char*)Rx_Buffer, "ERROR")){
-			match = 2;
-		}
-	} else if (TotalExpAns > 1){
-		/* Iterate over all the expected answers */
-		for(i = 0; i < TotalExpAns; i++){
-			/* Compare the content of the element against the received response */
-			if(NULL_PTR != strstr((const char*)Rx_Buffer, (const char *)pExpectedAnswers[i])){
-				match = i+1;
-			}
-		}
-	}
-
-	return match;
-}
-
-int GetIntResponse(void){
-	int value = 0;
-	uint8_t i = 0;
-	bool numberDetected = false;
-	uint8_t receivedChar = 0;
-	uint32_t timeout_ms = 1000;
-	Lpuart_Uart_Ip_StatusType ReceiveStatus = LPUART_UART_IP_STATUS_ERROR;
-
-	/* Initialize timeout timer to reach expected timeout value */
-	InitTimeoutTimer(timeout_ms);
-
-	/* Clear with 0 the reception buffer */
-	memset((uint8_t*)Rx_Buffer, 0, MAX_LEN);
-
-	/* Receive the stream to convert later */
-	ReceiveStatus = Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&Rx_Buffer[0], MAX_LEN, 10000);
-
-	/* Main process of the function, verify received character and store into the buffer if it is a number */
-	do{
-		ReceiveStatus = Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&receivedChar, 1, 10000);
-		if((receivedChar >= 48) && (receivedChar <=57) && (LPUART_UART_IP_STATUS_SUCCESS == ReceiveStatus)){
-			numberDetected = true;
-			Rx_Buffer[i++] = receivedChar;
-		} else {
-			numberDetected = false;
-		}
-	}while((GetCurrentTime() < timeout_ms) && numberDetected);
-
-	/* De-Initialize timer as operation has finished */
-	DeinitTimeoutTimer();
-
-	/* If i is greater than 0, it indicates that there was at least a number received */
-	if(i != 0){
-		/* If possible, transform the received buffer to the corresponding integer value */
-		value = atoi((const char*)Rx_Buffer);
-	} else {
-		/* Saturate return value to indicate error occurred */
-		value = 0xFFFF;
-	}
-
-	return value;
-}
-
-int GetIntBefore(char lastChar){
-	volatile int value = 0;
-	char buffer[7] = {0};
-	char character = 0;
-	uint8_t i = 0;
-	uint8_t numberStart = 0;
-	uint8_t index = 0;
-
-	do{
-		Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&character, 1, 10000);
-		if (character != lastChar){
-			buffer[index++] = character;
-		}
-	}while(character != lastChar);
-
-	if(index && index < 7){
-		buffer[index] = '\0';
-		value = atoi(buffer);
-
-		return value;
-	}
-
-	return -9999;
-}
-
-
-
-//// TODO(vshymanskyy): Optimize this!
-//int8_t waitResponseImpl(uint32_t timeout_ms, String& data,
-//                        GsmConstStr r1 = GFP(GSM_OK),
-//                        GsmConstStr r2 = GFP(GSM_ERROR),
-//                        GsmConstStr r3 = nullptr, GsmConstStr r4 = nullptr,
-//                        GsmConstStr r5 = nullptr, GsmConstStr r6 = nullptr,
-//                        GsmConstStr r7 = nullptr) {
-//  data.reserve(64);
-//
-//#ifdef TINY_GSM_DEBUG_DEEP
-//  DBG(GF("r1 <"), r1 ? r1 : GF("NULL"), GF("> r2 <"), r2 ? r2 : GF("NULL"),
-//      GF("> r3 <"), r3 ? r3 : GF("NULL"), GF("> r4 <"), r4 ? r4 : GF("NULL"),
-//      GF("> r5 <"), r5 ? r5 : GF("NULL"), GF("> r6 <"), r6 ? r6 : GF("NULL"),
-//      GF("> r7 <"), r7 ? r7 : GF("NULL"), '>');
-//#endif
-//  uint8_t  index       = 0;
-//  uint32_t startMillis = millis();
-//  do {
-//    TINY_GSM_YIELD();
-//    while (thisModem().stream.available() > 0) {
-//      TINY_GSM_YIELD();
-//      int8_t a = thisModem().stream.read();
-//      if (a <= 0) continue;  // Skip 0x00 bytes, just in case
-//      data += static_cast<char>(a);
-//      if (r1 && data.endsWith(r1)) {
-//        index = 1;
-//        goto finish;
-//      } else if (r2 && data.endsWith(r2)) {
-//        index = 2;
-//        goto finish;
-//      } else if (r3 && data.endsWith(r3)) {
-//        index = 3;
-//        goto finish;
-//      } else if (r4 && data.endsWith(r4)) {
-//        index = 4;
-//        goto finish;
-//      } else if (r5 && data.endsWith(r5)) {
-//        index = 5;
-//        goto finish;
-//      } else if (r6 && data.endsWith(r6)) {
-//        index = 6;
-//        goto finish;
-//      } else if (r7 && data.endsWith(r7)) {
-//        index = 7;
-//        goto finish;
-//      }
-//#if defined TINY_GSM_DEBUG
-//      else if (data.endsWith(GFP(GSM_VERBOSE)) ||
-//               data.endsWith(GFP(GSM_VERBOSE_2))) {
-//        // check how long the new line is
-//        // should be either 1 ('\r' or '\n') or 2 ("\r\n"))
-//        int len_atnl = strnlen(AT_NL, 3);
-//        // Read out the verbose message, until the last character of the new
-//        // line
-//        data += thisModem().stream.readStringUntil(AT_NL[len_atnl]);
-//#ifdef TINY_GSM_DEBUG_DEEP
-//        data.trim();
-//        DBG(GF("Verbose details <<<"), data, GF(">>>"));
-//#endif
-//        data = "";
-//        goto finish;
-//      }
-//#endif
-//      else if (thisModem().handleURCs(data)) {
-//        data = "";
-//      }
-//    }
-//  } while (millis() - startMillis < timeout_ms);
-//finish:
-//#ifdef TINY_GSM_DEBUG_DEEP
-//  data.replace("\r", "←");
-//  data.replace("\n", "↓");
-//#endif
-//  if (!index) {
-//    data.trim();
-//    if (data.length()) { DBG("### Unhandled:", data); }
-//    data = "";
-//  } else {
-//#ifdef TINY_GSM_DEBUG_DEEP
-//    DBG('<', index, '>', data);
-//#endif
-//  }
-//  return index;
-//}
