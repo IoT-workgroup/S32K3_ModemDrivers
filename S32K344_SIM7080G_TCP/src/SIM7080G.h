@@ -199,7 +199,7 @@ uint8_t waitResponse(
 uint8_t sendAT
 (
 	const char* pData,
-	uint8_t dataLength,
+	uint16_t dataLength,
 	uint16_t delay_ms
 );
 

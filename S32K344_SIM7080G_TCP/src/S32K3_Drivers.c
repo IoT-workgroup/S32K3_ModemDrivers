@@ -339,7 +339,7 @@ uint8_t waitResponseImpl(
 uint8_t sendATImpl
 (
 	const char* pData,
-	uint8_t dataLength
+	uint16_t dataLength
 )
 {
 	uint8_t command_status = 0;

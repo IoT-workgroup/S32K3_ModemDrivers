@@ -163,7 +163,7 @@ uint8_t waitResponseImpl
 uint8_t sendATImpl
 (
 	const char* pData,
-	uint8_t dataLength
+	uint16_t dataLength
 );
 
 /**

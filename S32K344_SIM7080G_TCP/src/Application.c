@@ -4,6 +4,14 @@
 #include <string.h>
 #include <stdio.h>
 
+/* Adafruit username */
+#define IO_USERNAME  "serviti"
+
+/*  Adafruit IO Key */
+#define IO_KEY       "aio_kARg3915AhsF7HFg3igXGrVFfsxE"
+
+#define IO_TOPIC	"Use-Case"
+
 const char Automatic_Network[] = "2";
 const char Modem_CATM[] = "1";
 char buffer[1024] = {0};
@@ -11,29 +19,27 @@ char buffer[1024] = {0};
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
 const int  port       = 8883;
-char username[] = "ie714410";
-char password[] = "aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8";
+char username[] = IO_USERNAME;
+char password[] = IO_KEY;
 char clientID[] = "ESP32";
+char topic[] = IO_TOPIC;
 
 
 static void connect_mqtt(void);
 
-//
-//void power_down(void)
-//{
-//	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 30);
-//	DelayImpl(2000);
-//	Siul2_Dio_Ip_ClearGPDO(SIUL2_INSTANCE, 30);
-//	DelayImpl(2000);
-//}
-//
-//void power_sequence(void)
-//{
-//	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 30);
-//	DelayImpl(2000);
-//	Siul2_Dio_Ip_ClearGPDO(SIUL2_INSTANCE, 30);
-//	DelayImpl(2000);
-//}
+static bool isConnect()
+{
+	uint8_t appStatus = 0;
+
+    sendAT("+SMSTATE?\r\n", sizeof("+SMSTATE?\r\n"), 0);
+    appStatus = waitResponse(3000, "+SMSTATE: ", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+    if(appStatus == 1){
+    	return GetIntResponse();
+    }
+
+
+    return false;
+}
 
 static void connect_mqtt(void){
 	uint8_t appStatus = 0;
@@ -208,6 +214,7 @@ void application_iot(void){
 	}
 
 	// Set the APN manually. Some operators need to set APN first when registering the network.
+	/* TODO: modify emnify information for personal implementation */
 	sendAT("+CGDCONT=1,\"IP\",\"emnify\"\r\n", sizeof("+CGDCONT=1,\"IP\",emnify\"\r\n"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
@@ -225,7 +232,7 @@ void application_iot(void){
 	sendAT("+CFUN=1\r\n", sizeof("+CFUN=0\r\n"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
-		/* Disable RF failed */
+		/* Enable RF failed */
 	}
 
 	while (regStatus != REG_OK_HOME && regStatus != REG_OK_ROAMING){
@@ -233,8 +240,8 @@ void application_iot(void){
 	}
 
 
-	 // Activate network bearer, APN can not be configured by default,
-	    // if the SIM card is locked, please configure the correct APN and user password, use the gprsConnect() method
+	// Activate network bearer, APN can not be configured by default,
+	// if the SIM card is locked, please configure the correct APN and user password, use the gprsConnect() method
 
 	if(!isGprsConnected()){
 
@@ -254,85 +261,19 @@ void application_iot(void){
 	appStatus = waitResponse(30000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	connect_mqtt();
-}
 
-//void tcp_test(void)
-//{
-//	power_sequence();
-//	Lpuart_Uart_Ip_SyncSend(DEBUG_UART_INSTANCE,(uint8_t *)"\r\nwait 15 seconds for signal\r\n\r\n",sizeof("\r\nwait 15 seconds for signal\r\n\r\n")-1, 0xFFFF);
-//	DelayImpl(15000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)CSQ,sizeof(CSQ)-1,0xff);
-//	send_at(CSQ, NULL, sizeof(CSQ)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)QUERY_CPSI,sizeof(QUERY_CPSI)-1,0xff);
-//	send_at(QUERY_CPSI, NULL, sizeof(QUERY_CPSI)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)EN_CNACT,sizeof(EN_CNACT)-1,0xff);
-//	send_at(EN_CNACT, NULL, sizeof(EN_CNACT)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)CACID,sizeof(CACID)-1,0xff);
-//	send_at(CACID, NULL, sizeof(CACID)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)CAOPEN,sizeof(CAOPEN)-1,0xff);
-//	send_at(CAOPEN, NULL, sizeof(CAOPEN)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)CASEND,sizeof(CASEND)-1,0xff);
-////	HAL_UART_Transmit(&huart2,(uint8_t *)MESSAGES,sizeof(MESSAGES)-1,0xff);
-////	HAL_UART_Transmit(&huart2,(uint8_t *)"\r\n",2,0xff);
-//	send_at(CASEND, MESSAGES, sizeof(CASEND)-1, sizeof(MESSAGES)-1, 2, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)CACLOSE,sizeof(CACLOSE)-1,0xff);
-//	send_at(CACLOSE, NULL, sizeof(CACLOSE)-1, 0, 1, 1000);
-//
-////	HAL_UART_Transmit(&huart2,(uint8_t *)DIS_CNCAT,sizeof(DIS_CNCAT)-1,0xff);
-//	send_at(DIS_CNCAT, NULL, sizeof(DIS_CNCAT)-1, 0, 1, 1000);
-//	power_sequence();
-//}
-//
-//bool isConnect(void){
-//	sendAT("+SMSTATE?", sizeof("+SMSTATE?"), 0);
-//	if(1 == waitResponseImpl(0, NULL_PTR, "+SMSTATE: ", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//		if(1 == waitResponseImpl(0, NULL_PTR, "\r", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//			return GetIntResponse();
-//		}
-//	}
-//
-//	return false;
-//}
-//
-//uint8_t connectMQTT(void){
-//	uint8_t status = 0;
-//
-//	sendAT("+SMCONF=\"URL\",\"io.adafruit.com\",8883", sizeof("+SMCONF=\"URL\",\"io.adafruit.com\",8883"), 0);
-//	if (1 != waitResponseImpl(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//		status = 1;
-//		return status;
-//	}
-//
-//	sendAT("+SMCONF=\"USERNAME\",\"ie714410\"", sizeof("+SMCONF=\"USERNAME\",\"ie714410"), 0);
-//	if (1 != waitResponseImpl(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//		status = 1;
-//		return status;
-//	}
-//
-//	sendAT("+SMCONF=\"PASSWORD\",", sizeof("+SMCONF=\"PASSWORD\","), 0);
-//	if (1 != waitResponseImpl(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//		status = 1;
-//		return status;
-//	}
-//
-//	sendAT("+SMCONF=\"CLIENTID\",\"ESP32\"", sizeof("+SMCONF=\"CLIENTID\",\"ESP32\""), 0);
-//	if (1 != waitResponseImpl(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-//		status = 1;
-//		return status;
-//	}
-//
-//	do{
-//		sendAT("+SMCONN", sizeof("+SMCONN"), 0);
-//		/* Attempting to connect */
-//	} while(1 != waitResponseImpl(3000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR));
-//
-//	return status;
-//}
+	for(;;){
+		if(!isConnect()){
+			/* Try again the connection with the MQTT server */
+			connect_mqtt();
+		} else {
+			/* Here will go the desired application, in the use-case it was a moisture sensor */
+			snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic, 5);
+			sendAT(buffer, sizeof(buffer), 0);
+			if(1 == waitResponse(30000, ">", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+
+			}
+		}
+	}
+}
 
