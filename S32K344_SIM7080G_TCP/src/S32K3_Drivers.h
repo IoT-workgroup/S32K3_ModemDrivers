@@ -83,6 +83,15 @@ void init_device_drivers(void);
 void DelayImpl(uint32_t milliseconds);
 
 /**
+* @brief       	Implements the reset routine to enable the modem usage.
+*
+* @api
+* @return        N/A
+* implements     Modem Reset Implementation
+*/
+void ModemResetImpl(void);
+
+/**
 * @brief       	Initialize the timer that will be used for timeout operations.
 *
 * @api

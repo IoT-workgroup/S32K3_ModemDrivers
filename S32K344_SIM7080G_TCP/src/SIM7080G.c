@@ -17,6 +17,18 @@ uint32 remainingBytes = 0;
 uint8 Rx_Buffer[MAX_LEN] = {0};
 
 /**
+* @brief       	Proceeds with hardware initialization for the SIM7080G Modem.
+*
+* @api
+* @param[in]	N/A
+* @return       N/A
+* implements    Modem initialization
+*/
+void initModem(void){
+	ModemResetImpl();
+}
+
+/**
 * @brief       	Generate a blocking delay to wait for a given amount of milliseconds.
 *
 * @api
@@ -274,13 +286,14 @@ bool TestAT(uint32_t timeout_ms) {
 
 	do{
 		/* Send the test AT command over serial with a delay of 100ms */
-		status = sendAT("AT\n\r", strlen("AT\n\r"), 100);
+		status = sendAT("AT\r\n", strlen("AT\r\n"), 0);
 
 		if (status == 0){
 
 			response = waitResponse(200, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 			if (response == 1){
+				DeinitTimeoutTimer();
 				return true;
 			}
 		}
@@ -296,6 +309,14 @@ bool TestAT(uint32_t timeout_ms) {
 	return false;
 }
 
+/**
+* @brief         Retrieve the LocalIP value from the modem
+* @api
+* @param[in]     N/A.
+* @return        IP Address
+* @retval        IP Address structure filled out with the obtained values
+* implements     getLocalIP
+*/
 IP_address getLocalIP(void){
 	uint8_t tmpIP[4] = {0};
 	IP_address localIP;
@@ -325,6 +346,16 @@ IP_address getLocalIP(void){
 	return localIP;
 }
 
+/**
+* @brief         Retrieve the current status of the SIM and if there is any pending action
+* @api
+* @param[in]     timeout value in milleconds before the function fails.
+* @return        Sim Status value
+* @retval		 SIM ERROR = 0. There was an error with the SIM or the communication
+* @retval		 SIM_READY = 1. SIM is ready to be used.
+* @retval 		 SIM_LOCKED	= 2. SIM is locked and expects user action.
+* implements     getSimStatus
+*/
 SimStatus getSimStatus(uint32_t timeout_ms){
 	uint32_t time_measure = 0;
 	uint8_t status = 0;
@@ -376,13 +407,22 @@ SimStatus getSimStatus(uint32_t timeout_ms){
 	return SIM_ERROR;
 }
 
-
+/**
+* @brief         Indicates the corresponding Network Mode in which the Modem will be configured
+* @api
+* @param[in]     Pointer to the string that contains the mode that will be used.
+* @return        Boolean Value to validate communication
+* @retval		 True - Communication successful
+* @retval		 False - Communication failed
+* implements     setNetworkMode
+*/
 bool setNetworkMode(const char* pMode) {
 	// 2 Automatic
 	// 13 GSM only
 	// 38 LTE only
 	sendAT("+CNMP=", strlen("+CNMP="), 0);
-	sendAT(pMode, strlen(pMode), 100);
+	sendAT(pMode, strlen(pMode), 0);
+	sendAT("\r\n", strlen("\r\n"), 100);
 
 	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		return true;
@@ -393,12 +433,22 @@ bool setNetworkMode(const char* pMode) {
 	return false;
 }
 
+/**
+* @brief         Reads the current Network Mode in which the modem is configured to operate
+* @api
+* @param[in]     N/A.
+* @return        Integer value indicating the different possible Network Modes
+* @retval		 2 - Automatic
+* @retval		 13 - GSM only
+* @retval		 38 - LTE only
+* implements     getNetworkMode
+*/
 int getNetworkMode(void) {
 	int mode = 0;
 
 	sendAT("+CNMP?", strlen("+CNMP?"), 100);
 
-	if (1 != waitResponse(0, NULL_PTR, "\r\n+CNMP?", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+	if (1 != waitResponse(0, NULL_PTR, "\r\n+CNMP:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		mode = -9999;
 		return mode;
 	}
@@ -410,6 +460,15 @@ int getNetworkMode(void) {
 	return mode;
 }
 
+/**
+* @brief         Indicates the preferred Mode in which the Modem will be configured
+* @api
+* @param[in]     Pointer to the string that contains the mode that will be used.
+* @return        Boolean Value to validate communication
+* @retval		 1 - Communication successful
+* @retval		 2 - Communication failed
+* implements     setPreferredMode
+*/
 bool setPreferredMode(char* pMode) {
 	// 1 CAT-M
 	// 2 NB-IoT
@@ -419,7 +478,8 @@ bool setPreferredMode(char* pMode) {
 	/* Send the AT command to set the preferred mode in the SIM */
 	sendAT("+CMNB=", strlen("+CMNB="), 0);
 	/* Send the specific mode that needs to be set in the SIM */
-	sendAT(pMode, strlen(pMode), 100);
+	sendAT(pMode, strlen(pMode), 0);
+	sendAT("\r\n", strlen("\r\n"), 100);
 
 	/* Wait to receive an OK response, with default value */
 	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
@@ -432,6 +492,16 @@ bool setPreferredMode(char* pMode) {
 	return status;
 }
 
+/**
+* @brief         Reads the current Preferred Mode in which the modem is configured to operate
+* @api
+* @param[in]     N/A.
+* @return        Integer value indicating the different possible Preferred Modes
+* @retval		 1 - CAT-M
+* @retval		 2 - NB-IoT
+* @retval		 3 - CAT-M and NB-IoT
+* implements     getPreferredMode
+*/
 int getPreferredMode(void) {
 	int mode = 0;
 
@@ -454,6 +524,15 @@ int getPreferredMode(void) {
 	return mode;
 }
 
+/**
+* @brief         Verifies if there is a valid connection
+* @api
+* @param[in]     N/A
+* @return        Boolean Value to validate connection
+* @retval		 True - Device Connected
+* @retval		 False - Not Connected
+* implements     setPreferredMode
+*/
 bool isGprsConnected(void) {
 	IP_address localIP;
 	IP_address cmpIP = {0};
@@ -478,13 +557,16 @@ bool isGprsConnected(void) {
 	return false;
 }
 
-/****************************************************************
- * 	Gets the modem's registration status via CREG/CGREG/CEREG:  *
- * 		CREG = Generic network registration                     *
- * 		CGREG = GPRS service registration                       *
- * 		CEREG = EPS registration for LTE modules                *
- ****************************************************************/
-
+/**
+* @brief         Gets the modem's registration status via CREG/CGREG/CEREG:
+* @api
+* @param[in]     Command to use to retrieve the Status XREG.
+* @return        Integer value indicating the different possible Preferred Modes
+* @retval		 1 - CREG = Generic network registration
+* @retval		 2 - CGREG = GPRS service registration
+* @retval		 3 - CEREG = EPS registration for LTE modules
+* implements     getRegistrationStatusXREG
+*/
 int8_t getRegistrationStatusXREG(const char* regCommand){
 	char CREG[] = "+CREG:";
 	char CGREG[] = "+CGREG:";
@@ -511,6 +593,13 @@ int8_t getRegistrationStatusXREG(const char* regCommand){
 	return status;
 }
 
+/**
+* @brief         Retrieves the current registration status of the modem:
+* @api
+* @param[in]     Command to use to retrieve the current status of the device.
+* @return        SIM70xxRegStatus according to the different possibilities
+* implements     getRegistrationStatus
+*/
 SIM70xxRegStatus getRegistrationStatus(void){
 	SIM70xxRegStatus epsStatus = REG_NO_RESULT;
 

@@ -41,7 +41,7 @@ int main(void)
 
 	init_device_drivers();
 
-	test_functionality(&test_msg[0], sizeof(test_msg)-1);
+	test_all_functionality();
 
 //	tcp_test();
 

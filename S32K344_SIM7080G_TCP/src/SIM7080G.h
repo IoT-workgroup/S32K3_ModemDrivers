@@ -19,8 +19,7 @@ typedef union {
 typedef enum {
   SIM_ERROR            = 0,
   SIM_READY            = 1,
-  SIM_LOCKED           = 2,
-  SIM_ANTITHEFT_LOCKED = 3,
+  SIM_LOCKED           = 2
 } SimStatus;
 
 typedef enum {
@@ -32,6 +31,16 @@ typedef enum {
   REG_OK_ROAMING   = 5,
   REG_UNKNOWN      = 4,
 }SIM70xxRegStatus;
+
+/**
+* @brief       	Proceeds with hardware initialization for the SIM7080G Modem.
+*
+* @api
+* @param[in]	N/A
+* @return       N/A
+* implements    Modem initialization
+*/
+void initModem(void);
 
 /**
 * @brief       	Generate a blocking delay to wait for a given amount of milliseconds.
@@ -206,18 +215,104 @@ uint8_t sendAT
 */
 bool TestAT(uint32_t timeout_ms);
 
+/**
+* @brief         Retrieve the LocalIP value from the modem
+* @api
+* @param[in]     N/A.
+* @return        IP Address
+* @retval        IP Address structure filled out with the obtained values
+* implements     getLocalIP
+*/
 IP_address getLocalIP(void);
 
+/**
+* @brief         Retrieve the current status of the SIM and if there is any pending action
+* @api
+* @param[in]     timeout value in milleconds before the function fails.
+* @return        Sim Status value
+* @retval		 SIM ERROR = 0. There was an error with the SIM or the communication
+* @retval		 SIM_READY = 1. SIM is ready to be used.
+* @retval 		 SIM_LOCKED	= 2. SIM is locked and expects user action.
+* implements     getSimStatus
+*/
+SimStatus getSimStatus(uint32_t timeout_ms);
+
+/**
+* @brief         Indicates the corresponding Network Mode in which the Modem will be configured
+* @api
+* @param[in]     Pointer to the string that contains the mode that will be used.
+* @return        Boolean Value to validate communication
+* @retval		 True - Communication successful
+* @retval		 False - Communication failed
+* implements     setNetworkMode
+*/
 bool setNetworkMode(const char* pMode);
 
+/**
+* @brief         Reads the current Network Mode in which the modem is configured to operate
+* @api
+* @param[in]     N/A.
+* @return        Integer value indicating the different possible Network Modes
+* @retval		 2 - Automatic
+* @retval		 13 - GSM only
+* @retval		 38 - LTE only
+* implements     getNetworkMode
+*/
+int getNetworkMode(void);
+
+/**
+* @brief         Indicates the preferred Mode in which the Modem will be configured
+* @api
+* @param[in]     Pointer to the string that contains the mode that will be used.
+* @return        Boolean Value to validate communication
+* @retval		 1 - Communication successful
+* @retval		 2 - Communication failed
+* implements     setPreferredMode
+*/
 bool setPreferredMode(char* pMode);
 
+/**
+* @brief         Reads the current Preferred Mode in which the modem is configured to operate
+* @api
+* @param[in]     N/A.
+* @return        Integer value indicating the different possible Preferred Modes
+* @retval		 1 - CAT-M
+* @retval		 2 - NB-IoT
+* @retval		 3 - CAT-M and NB-IoT
+* implements     getPreferredMode
+*/
 int getPreferredMode(void);
 
+/**
+* @brief         Verifies if there is a valid connection
+* @api
+* @param[in]     N/A
+* @return        Boolean Value to validate connection
+* @retval		 True - Device Connected
+* @retval		 False - Not Connected
+* implements     setPreferredMode
+*/
 bool isGprsConnected(void);
 
+/**
+* @brief         Gets the modem's registration status via CREG/CGREG/CEREG:
+* @api
+* @param[in]     Command to use to retrieve the Status XREG.
+* @return        Integer value indicating the different possible Preferred Modes
+* @retval		 1 - CREG = Generic network registration
+* @retval		 2 - CGREG = GPRS service registration
+* @retval		 3 - CEREG = EPS registration for LTE modules
+* implements     getRegistrationStatusXREG
+*/
 int8_t getRegistrationStatusXREG(const char* regCommand);
 
+/**
+* @brief         Retrieves the current registration status of the modem:
+* @api
+* @param[in]     Command to use to retrieve the current status of the device.
+* @return        SIM70xxRegStatus according to the different possibilities
+* implements     getRegistrationStatus
+*/
 SIM70xxRegStatus getRegistrationStatus(void);
 
 

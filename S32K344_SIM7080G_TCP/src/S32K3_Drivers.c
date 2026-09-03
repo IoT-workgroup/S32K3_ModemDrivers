@@ -31,7 +31,6 @@ static bool handleURCs(const char *str);
 */
 static bool endsWith(const char *str, const char *suffix);
 
-
 /****************************************************************************************
  ************************* LOCAL FUNCTION DECLARATIONS **********************************
  ****************************************************************************************/
@@ -68,6 +67,8 @@ static bool endsWith(const char *str, const char *suffix){
 /*****************************************************************************************
  ************************* GLOBAL FUNCTION DECLARATIONS **********************************
  *****************************************************************************************/
+
+
 
 /**
 * @brief       	Initialize S32K3 Low Level Drivers for serial communication and timers usage.
@@ -132,6 +133,24 @@ void DelayImpl(uint32_t milliseconds){
 
 	/* Stop the timer */
 	Stm_Ip_StopTimer(STM_INST_0);
+}
+
+/**
+* @brief       	Implements the reset routine to enable the modem usage.
+*
+* @api
+* @return        N/A
+* implements     Modem Reset Implementation
+*/
+void ModemResetImpl(void){
+/* Turn-on selected pin */
+	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 30);
+/* Wait 2000 ms */
+	DelayImpl(2000);
+/* Turn-off selected pin */
+	Siul2_Dio_Ip_ClearGPDO(SIUL2_INSTANCE, 30);
+/* Wait 2000 ms */
+	DelayImpl(2000);
 }
 
 /**
@@ -254,18 +273,10 @@ uint8_t waitResponseImpl(
 	/* Initialize the timeout timer */
 	InitTimeoutTimerImpl(timeout_ms);
 
+	/* Retrieve the UART character for the reception */
+	Lpuart_Uart_Ip_AsyncReceive(AT_UART_INSTANCE,(uint8 *)pData, MAX_LEN);
+
 	do{
-		/* Retrieve the UART character for the reception */
-		Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&character, 1, 10000);
-
-		/* Verify that the character received is not NULL, if it's NULL then skip it */
-		if (character <= 0){
-			continue;
-		}
-
-		/* Store the character in the indicated data buffer */
-		*(pData+(index++)) = character;
-
 		/* Verify if the Data Buffer ends with the string found in pR1 */
 		if(pR1 && endsWith((const char*)pData, (const char*)pR1)){
 			response = 1;
@@ -306,6 +317,8 @@ uint8_t waitResponseImpl(
 
 	/* This loop will occur until a expected response is received or until a timeout occurs */
 	}while(GetCurrentTimeImpl() < timeout_ms);
+
+	Lpuart_Uart_Ip_AbortReceivingData(AT_UART_INSTANCE);
 
 	/* De-initialize the timeout timer once out of the function main execution */
 	DeinitTimeoutTimerImpl();

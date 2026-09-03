@@ -8,8 +8,6 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-#include "Mcal.h"
-
 #define CSQ							"AT+CSQ\r\n"
 #define QUERY_CPSI					"AT+CPSI?\r\n"
 #define EN_CNACT					"AT+CNACT=0,1\r\n"
@@ -24,8 +22,7 @@
 
 void power_dowm(void);
 void power_up(void);
-void test_functionality(uint8_t *msg_buffer, uint8_t msg_length );
+void test_all_functionality(void);
 void tcp_test(void);
-bool isConnect(void);
 
 #endif /* APPLICATION_H_ */
