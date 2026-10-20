@@ -286,7 +286,7 @@ bool TestAT(uint32_t timeout_ms) {
 
 	do{
 		/* Send the test AT command over serial with a delay of 100ms */
-		status = sendAT("AT\r\n", strlen("AT\r\n"), 0);
+		status = sendAT("AT\r", strlen("AT\r"), 0);
 
 		if (status == 0){
 
@@ -328,7 +328,7 @@ IP_address getLocalIP(void){
 	localIP.bytes[3] = 0;
 
 	/* Send the command to retrieve the local IP of the SIM */
-	sendAT("+CNACT?", sizeof("+CNACT?"), 0);
+	sendAT("+CNACT?\r", sizeof("+CNACT?\r"), 0);
 	if(1 != waitResponseImpl(0, NULL_PTR, "\r\n+CNACT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		tmpIP[0] = '\0';
 	}
@@ -373,12 +373,13 @@ SimStatus getSimStatus(uint32_t timeout_ms){
 	 * a response is obtained from the SIM
 	 */
 	do{
+		time_measure = GetCurrentTime();
 		/* Send AT command to retrieve the status of the SIM */
-		sendAT("+CPIN?", strlen("+CPIN?"), 1000);
+		sendAT("+CPIN?\r", strlen("+CPIN?\r"), 0);
 
 		/* Verify that the response obtained first corresponds to +CPIN */
 		if (waitResponse(0, NULL_PTR, "+CPIN:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR) != 1) {
-			Delay(1000);
+			//Delay(100);
 			continue;
 		}
 
@@ -403,6 +404,8 @@ SimStatus getSimStatus(uint32_t timeout_ms){
 		}
 	}while(time_measure < timeout_ms);
 
+	DeinitTimeoutTimer();
+
 	/* If a timeout ocurred, the return value is SIM_ERROR */
 	return SIM_ERROR;
 }
@@ -422,7 +425,7 @@ bool setNetworkMode(const char* pMode) {
 	// 38 LTE only
 	sendAT("+CNMP=", strlen("+CNMP="), 0);
 	sendAT(pMode, strlen(pMode), 0);
-	sendAT("\r\n", strlen("\r\n"), 100);
+	sendAT("\r", strlen("\r"), 0);
 
 	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		return true;
@@ -446,7 +449,7 @@ bool setNetworkMode(const char* pMode) {
 int getNetworkMode(void) {
 	int mode = 0;
 
-	sendAT("+CNMP?", strlen("+CNMP?"), 100);
+	sendAT("+CNMP?\r", strlen("+CNMP?\r"), 100);
 
 	if (1 != waitResponse(0, NULL_PTR, "\r\n+CNMP:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		mode = -9999;
@@ -479,7 +482,7 @@ bool setPreferredMode(char* pMode) {
 	sendAT("+CMNB=", strlen("+CMNB="), 0);
 	/* Send the specific mode that needs to be set in the SIM */
 	sendAT(pMode, strlen(pMode), 0);
-	sendAT("\r\n", strlen("\r\n"), 100);
+	sendAT("\r", strlen("\r"), 100);
 
 	/* Wait to receive an OK response, with default value */
 	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
@@ -506,7 +509,7 @@ int getPreferredMode(void) {
 	int mode = 0;
 
 	/* Send the AT command to request the preferred mode configured in the SIM */
-	sendAT("+CMNB?", strlen("+CMNB?"), 100);
+	sendAT("+CMNB?\r", strlen("+CMNB?\r"), 100);
 
 	/* Wait to receive the specific response indicating that the following number is the mode that is assigned*/
 	if (1 != waitResponse(0, NULL_PTR, "\r\n+CMNB:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
@@ -538,11 +541,11 @@ bool isGprsConnected(void) {
 	IP_address cmpIP = {0};
 
 	int res = 0;
-	sendAT("+CGATT?", sizeof("+CGATT?"), 0);
+	sendAT("+CGATT?\r", sizeof("+CGATT?\r"), 0);
 	if(1 != waitResponse(0, NULL_PTR, "+CGATT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		return false;
 	}
-	res = GetIntBefore('\n');
+	res = GetIntBefore("\n");
 	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(res != 1){
 		return false;
@@ -576,7 +579,7 @@ int8_t getRegistrationStatusXREG(const char* regCommand){
 
 	sendAT("+", strlen("+"), 0);
 	sendAT(regCommand, strlen(regCommand), 0);
-	sendAT("?", strlen("?"), 0);
+	sendAT("?\r", strlen("?\r"), 0);
 
 	/* Read the expected response comparing against CREG, CGREG and CEREG */
 	resp = waitResponse(0, NULL_PTR, CREG, CGREG, CEREG, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);

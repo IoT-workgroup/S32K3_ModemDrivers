@@ -83,6 +83,7 @@ extern "C"
 *                                      DEFINES AND MACROS
 ==================================================================================================*/
 #define STM_0_CH_0 &STM_0_ChannelConfig_PB_VS_0[0]
+#define STM_1_CH_0 &STM_1_ChannelConfig_PB_VS_0[0]
 
 /*==================================================================================================
 *                                             ENUMS
@@ -99,7 +100,9 @@ extern "C"
 #define GPT_START_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Gpt_MemMap.h"
 extern const Stm_Ip_InstanceConfigType STM_0_InitConfig_PB_VS_0;
+extern const Stm_Ip_InstanceConfigType STM_1_InitConfig_PB_VS_0;
 extern const Stm_Ip_ChannelConfigType STM_0_ChannelConfig_PB_VS_0[1U];
+extern const Stm_Ip_ChannelConfigType STM_1_ChannelConfig_PB_VS_0[1U];
 #define GPT_STOP_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Gpt_MemMap.h"
 

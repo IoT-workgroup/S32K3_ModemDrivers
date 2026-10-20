@@ -111,6 +111,8 @@ PortContainer_0_VS_0:
   - {pin_num: A12, peripheral: LPUART6, signal: lpuart6_tx, pin_signal: PTA16, direction: OUTPUT}
   - {pin_num: P3, peripheral: SIUL2, signal: 'gpio, 30', pin_signal: PTA30, direction: OUTPUT}
   - {pin_num: P1, peripheral: SIUL2, signal: 'gpio, 31', pin_signal: PTA31, direction: OUTPUT}
+  - {pin_num: C12, peripheral: LPI2C1, signal: lpi2c1_sda, pin_signal: PTC6, direction: INPUT/OUTPUT}
+  - {pin_num: B12, peripheral: LPI2C1, signal: lpi2c1_scl, pin_signal: PTC7, direction: INPUT/OUTPUT}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */

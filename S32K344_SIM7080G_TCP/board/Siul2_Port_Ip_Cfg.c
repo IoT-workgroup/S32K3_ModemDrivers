@@ -111,6 +111,8 @@ PortContainer_0_VS_0:
   - {pin_num: A12, peripheral: LPUART6, signal: lpuart6_tx, pin_signal: PTA16, direction: OUTPUT}
   - {pin_num: P3, peripheral: SIUL2, signal: 'gpio, 30', pin_signal: PTA30, direction: OUTPUT}
   - {pin_num: P1, peripheral: SIUL2, signal: 'gpio, 31', pin_signal: PTA31, direction: OUTPUT}
+  - {pin_num: C12, peripheral: LPI2C1, signal: lpi2c1_sda, pin_signal: PTC6, direction: INPUT/OUTPUT}
+  - {pin_num: B12, peripheral: LPI2C1, signal: lpi2c1_scl, pin_signal: PTC7, direction: INPUT/OUTPUT}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -246,6 +248,78 @@ const Siul2_Port_Ip_PinSettingsConfig g_pin_mux_InitConfigArr_PortContainer_0_VS
         .outputBuffer                = PORT_OUTPUT_BUFFER_ENABLED,
         .adcInterleaves              = { MUX_MODE_NOT_AVAILABLE, MUX_MODE_NOT_AVAILABLE },
         .initValue                   = 0u
+    },
+    {
+        .base                        = IP_SIUL2,
+        .pinPortIdx                  = 70u,
+        .mux                         = PORT_MUX_ALT1,
+        .safeMode                    = PORT_SAFE_MODE_DISABLED,
+        .inputFilter                 = PORT_INPUT_FILTER_NOT_AVAILABLE,
+        .driveStrength               = PORT_DRIVE_STRENTGTH_DISABLED,
+        .pullConfig                  = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .pullKeep                    = PORT_PULL_KEEP_DISABLED,
+        .invert                      = PORT_INVERT_DISABLED,
+        .inputBuffer                 = PORT_INPUT_BUFFER_ENABLED,
+        .outputBuffer                = PORT_OUTPUT_BUFFER_ENABLED,
+        .adcInterleaves              = { MUX_MODE_NOT_AVAILABLE, MUX_MODE_NOT_AVAILABLE },
+        .inputMuxReg                 = {
+                                         219u
+                                       },
+        .inputMux                    = { 
+                                         PORT_INPUT_MUX_ALT2,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT
+                                       },
+        .initValue                   = 2u
+    },
+    {
+        .base                        = IP_SIUL2,
+        .pinPortIdx                  = 71u,
+        .mux                         = PORT_MUX_ALT3,
+        .safeMode                    = PORT_SAFE_MODE_DISABLED,
+        .inputFilter                 = PORT_INPUT_FILTER_NOT_AVAILABLE,
+        .driveStrength               = PORT_DRIVE_STRENTGTH_DISABLED,
+        .pullConfig                  = PORT_INTERNAL_PULL_NOT_ENABLED,
+        .pullKeep                    = PORT_PULL_KEEP_DISABLED,
+        .invert                      = PORT_INVERT_DISABLED,
+        .inputBuffer                 = PORT_INPUT_BUFFER_ENABLED,
+        .outputBuffer                = PORT_OUTPUT_BUFFER_ENABLED,
+        .adcInterleaves              = { MUX_MODE_NOT_AVAILABLE, MUX_MODE_NOT_AVAILABLE },
+        .inputMuxReg                 = {
+                                         217u
+                                       },
+        .inputMux                    = { 
+                                         PORT_INPUT_MUX_ALT1,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT,
+                                         PORT_INPUT_MUX_NO_INIT
+                                       },
+        .initValue                   = 2u
     },
 };
 

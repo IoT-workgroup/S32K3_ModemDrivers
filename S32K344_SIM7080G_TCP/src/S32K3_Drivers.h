@@ -16,6 +16,7 @@
 #include "string.h"
 #include "Stm_Ip.h"
 #include "Siul2_Dio_Ip.h"
+#include "Lpi2c_Ip.h"
 
 /**********************************************************/
 /**********			     SIUL					***********/
@@ -24,13 +25,19 @@
 #define SIUL2_INSTANCE				(0U)
 
 /**********************************************************/
+/**********			     I2C					***********/
+/**********************************************************/
+
+#define I2C_AXP2101_INSTANCE		(1U)
+
+/**********************************************************/
 /**********			     UART					***********/
 /**********************************************************/
 /* Length of the message to be received from the console */
 #define MAX_LEN  					(64U)
 
 /* UART to be used with the AT SIM7080G */
-#define AT_UART_INSTANCE  			(6U)
+#define AT_UART_INSTANCE  			(3U)
 
 /* UART to send the log to the main computer */
 #define DEBUG_UART_INSTANCE  		(6U)
@@ -42,9 +49,11 @@
 /**********************************************************/
 /* STM instance used - 12 */
 #define STM_INST_0 					(0U)
+#define STM_INST_1 					(1U)
 
-/* STM Channel used - 0 */
+/* STM Channel used - 0 | 1 */
 #define CH_0 						(0U)
+#define CH_1 						(1U)
 
 #define STM_START_CNT_VALUE			(0U)
 
@@ -191,7 +200,7 @@ bool streamSkipUntilImpl
 */
 int GetIntBeforeImpl
 (
-	const char lastChar
+	const char *pLastChar
 );
 
 /**

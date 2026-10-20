@@ -24,5 +24,6 @@ void power_dowm(void);
 void power_up(void);
 void test_all_functionality(void);
 void tcp_test(void);
+void application_iot(void);
 
 #endif /* APPLICATION_H_ */

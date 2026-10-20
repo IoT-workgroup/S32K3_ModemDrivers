@@ -40,8 +40,10 @@ int main(void)
 {
 
 	init_device_drivers();
+//	test_all_functionality();
+	application_iot();
 
-	test_all_functionality();
+
 
 //	tcp_test();
 

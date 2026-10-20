@@ -217,10 +217,10 @@
 		<COND_TOOLCHAIN_CUSTOM_OPTION/>
 	</storageModule>
 	<storageModule moduleId="com.nxp.s32ds.cle.uct.internal.core.toolchainScriptProfile">
-		<COND_TOOLCHAIN_COMPONENTS_OPTION>COPY=platform.driver.siul2_dio;platform.driver.stm;platform.driver.clock;platform.driver.osif;platform.driver.lpuart_uart;platform.driver.IntCtrl_Ip;platform.driver.siul2_port</COND_TOOLCHAIN_COMPONENTS_OPTION>
+		<COND_TOOLCHAIN_COMPONENTS_OPTION>COPY=platform.driver.siul2_dio;platform.driver.stm;platform.driver.clock;platform.driver.osif;platform.driver.lpuart_uart;platform.driver.IntCtrl_Ip;platform.driver.lpi2c;platform.driver.siul2_port;platform.driver.Clock_Ip_ReferencePoints</COND_TOOLCHAIN_COMPONENTS_OPTION>
 	</storageModule>
 	<storageModule moduleId="com.nxp.s32ds.cle.uct.core">
-		<sdkComponents>platform.driver.clock;platform.driver.rte_mcu;platform.driver.osif;platform.driver.det;platform.driver.rte_osif;platform.driver.lpuart_uart;platform.driver.rte_uart;platform.driver.siul2_port;platform.driver.rte_port;platform.driver.siul2_dio;platform.driver.rte_dio;platform.driver.IntCtrl_Ip;platform.driver.stm;platform.driver.rte_gpt</sdkComponents>
+		<sdkComponents>platform.driver.clock;platform.driver.rte_mcu;platform.driver.osif;platform.driver.det;platform.driver.rte_osif;platform.driver.lpuart_uart;platform.driver.rte_uart;platform.driver.siul2_port;platform.driver.rte_port;platform.driver.siul2_dio;platform.driver.rte_dio;platform.driver.IntCtrl_Ip;platform.driver.stm;platform.driver.rte_gpt;platform.driver.Clock_Ip_ReferencePoints;platform.driver.lpi2c;platform.driver.rte_i2c</sdkComponents>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

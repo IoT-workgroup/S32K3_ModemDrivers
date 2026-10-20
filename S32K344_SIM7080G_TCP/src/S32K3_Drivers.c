@@ -91,11 +91,17 @@ void init_device_drivers(void){
 	/*Initialize STM Instance 0 - channel 0 */
 	Stm_Ip_InitChannel(STM_INST_0, STM_0_ChannelConfig_PB_VS_0);
 
-	/* Enable the configured UART interrupts if any */
-	IntCtrl_Ip_Init(&IntCtrlConfig_0);
+    /* Initializes the UART driver */
+    Lpuart_Uart_Ip_Init(AT_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_3_VS_0);
 
     /* Initializes the UART driver */
     Lpuart_Uart_Ip_Init(DEBUG_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_3_VS_0);
+
+
+    Lpi2c_Ip_MasterInit(I2C_AXP2101_INSTANCE, &I2c_Lpi2cMaster_HwChannel1_Channel0_VS_0);
+
+    /* Enable the configured UART interrupts if any */
+    IntCtrl_Ip_Init(&IntCtrlConfig_0);
 }
 
 /**
@@ -168,13 +174,13 @@ void InitTimeoutTimerImpl(uint32_t milliseconds){
 	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
 
 	/* Start the STM timer with a defined start value */
-	Stm_Ip_StartTimer(STM_INST_0, STM_START_CNT_VALUE);
+	Stm_Ip_StartTimer(STM_INST_1, STM_START_CNT_VALUE);
 
 	/* Enable the compare channel as comparison will be monitored*/
-	Stm_Ip_EnableChannel(STM_INST_0, CH_0);
+	Stm_Ip_EnableChannel(STM_INST_1, CH_0);
 
 	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
-	Stm_Ip_StartCounting(STM_INST_0, CH_0, ms_count_conversion);
+	Stm_Ip_StartCounting(STM_INST_1, CH_0, ms_count_conversion);
 }
 
 /**
@@ -188,7 +194,7 @@ void InitTimeoutTimerImpl(uint32_t milliseconds){
 uint32_t GetCurrentTimeImpl(void){
 	uint32_t milliseconds = 0;
 
-	milliseconds = Stm_Ip_GetCounterValue(STM_INST_0);
+	milliseconds = Stm_Ip_GetCounterValue(STM_INST_1);
 	milliseconds = milliseconds/(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
 
 	return milliseconds;
@@ -204,7 +210,7 @@ uint32_t GetCurrentTimeImpl(void){
 */
 void DeinitTimeoutTimerImpl(void){
 	/* Disable the compare channel as the comparison is no longer needed */
-	Stm_Ip_DisableChannel(STM_INST_0, CH_0);
+	Stm_Ip_DisableChannel(STM_INST_1, CH_0);
 
 	/* Stop the timer */
 	Stm_Ip_StopTimer(STM_INST_0);
@@ -427,27 +433,32 @@ bool streamSkipUntilImpl
 * @return       Integer value that is obtained before the indicated character.
 * implements    GetIntBeforeImpl
 */
-int GetIntBeforeImpl(const char lastChar){
+int GetIntBeforeImpl(const char *pLastChar){
 	volatile int value = 0;
 	char buffer[7] = {0};
-	char character = 0;
 	uint8_t index = 0;
 
-	do{
-		Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&character, 1, 10000);
-		if (character != lastChar){
-			buffer[index++] = character;
+	/* If the response expected ends with the indicated character, then it will return 1, otherwise there will be an error */
+	if(1 == waitResponseImpl(0, buffer, pLastChar, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		/* Go over the buffer to verify the location of the last character */
+		while((index < 7) && (buffer[index] != pLastChar[0])){
+			index++;
 		}
-	}while(character != lastChar);
 
-	if(index && index < 7){
-		buffer[index] = '\0';
-		value = atoi(buffer);
+		/* Verify the buffer is inside the limit size and turn the received number into integer */
+		if((index > 0) && (index < 7)){
+			/* Replace the ending of the buffer with the null to make it a string */
+			buffer[index] = '\0';
 
-		return value;
+			/* Request the conversion from array to integer */
+			value = atoi(buffer);
+		}
+	} else {
+		/* set the variable to -9999 to indicate error found */
+		value = -9999;
 	}
 
-	return -9999;
+	return value;
 }
 
 /**
@@ -461,10 +472,12 @@ int GetIntBeforeImpl(const char lastChar){
 */
 int GetIntResponseImpl(void){
 	int value = 0;
-	uint8_t i = 0;
+	uint8_t previousIndex = 0;
+	uint8_t index = 0;
 	bool numberDetected = false;
 	uint8_t receivedChar = 0;
 	uint32_t timeout_ms = 1000;
+	uint8_t remainingBytes = MAX_LEN;
 	Lpuart_Uart_Ip_StatusType ReceiveStatus = LPUART_UART_IP_STATUS_ERROR;
 
 	/* Initialize timeout timer to reach expected timeout value */
@@ -473,22 +486,41 @@ int GetIntResponseImpl(void){
 	/* Clear with 0 the reception buffer */
 	memset((uint8_t*)InternalRx_Buffer, 0, MAX_LEN);
 
+	/* Retrieve the UART character for the reception */
+	Lpuart_Uart_Ip_AsyncReceive(AT_UART_INSTANCE,(uint8 *)InternalRx_Buffer, MAX_LEN);
+
 	/* Main process of the function, verify received character and store into the buffer if it is a number */
 	do{
-		ReceiveStatus = Lpuart_Uart_Ip_SyncReceive(AT_UART_INSTANCE,(uint8 *)&receivedChar, 1, 10000);
-		if((receivedChar >= 48) && (receivedChar <=57) && (LPUART_UART_IP_STATUS_SUCCESS == ReceiveStatus)){
-			numberDetected = true;
-			InternalRx_Buffer[i++] = receivedChar;
-		} else {
-			numberDetected = false;
+		/* Update last index obtained for later comparison*/
+		previousIndex = index;
+
+		/* Verify the status of the reception and check if any byte has arrived */
+		ReceiveStatus = Lpuart_Uart_Ip_GetReceiveStatus(AT_UART_INSTANCE, remainingBytes);
+
+		/*obtain the current index of the data received */
+		index = MAX_LEN - remainingBytes;
+
+		/* Check if there is any byte received */
+		if(previousIndex < index){
+			/* Store the char from Internal Buffer with an index offset of -1 due to the array access */
+			receivedChar = InternalRx_Buffer[index-1];
+
+			/* Analyze the received char to verify if it is a number */
+			if((receivedChar >= 48) && (receivedChar <=57) && (LPUART_UART_IP_STATUS_SUCCESS == ReceiveStatus)){
+				numberDetected = true;
+			} else {
+				numberDetected = false;
+			}
 		}
 	}while((GetCurrentTimeImpl() < timeout_ms) && numberDetected);
+
+	Lpuart_Uart_Ip_AbortReceivingData(AT_UART_INSTANCE);
 
 	/* De-Initialize timer as operation has finished */
 	DeinitTimeoutTimerImpl();
 
 	/* If i is greater than 0, it indicates that there was at least a number received */
-	if(i != 0){
+	if(index != 0){
 		/* If possible, transform the received buffer to the corresponding integer value */
 		value = atoi((const char*)InternalRx_Buffer);
 	} else {

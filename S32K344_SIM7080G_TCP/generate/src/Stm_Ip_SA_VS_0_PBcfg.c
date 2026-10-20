@@ -103,9 +103,40 @@ const Stm_Ip_InstanceConfigType STM_0_InitConfig_PB_VS_0 =
                 FFh - Divide module clock by 256 */
     47U
 };
+
+
+const Stm_Ip_InstanceConfigType STM_1_InitConfig_PB_VS_0 =
+{
+    /** @brief STM Freeze Enable */
+    (boolean)(FALSE),
+#if(STM_IP_SET_CLOCK_MODE == STD_ON)
+    /** @brief STM Alternate Prescaler Value */
+    0U,
+#endif
+    /** @brief STM Prescaler Value
+                00h - Divide module clock by 1
+                01h - Divide module clock by 2
+                ....
+                FFh - Divide module clock by 256 */
+    47U
+};
 const Stm_Ip_ChannelConfigType STM_0_ChannelConfig_PB_VS_0[1U] =
 {
     /**@brief STM0_CH0 */ 
+    {
+        /** @brief STM Channel Id */
+        0U,
+        /** @brief STM callback name */
+        NULL_PTR,
+        /** @brief STM callbackparam */
+        (uint8)0U,
+        /** @brief STM channel mode  */
+        STM_IP_CH_MODE_CONTINUOUS
+    }
+};
+const Stm_Ip_ChannelConfigType STM_1_ChannelConfig_PB_VS_0[1U] =
+{
+    /**@brief StmChannel_0 */ 
     {
         /** @brief STM Channel Id */
         0U,

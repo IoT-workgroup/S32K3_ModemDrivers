@@ -31,7 +31,7 @@ static bool isConnect()
 {
 	uint8_t appStatus = 0;
 
-    sendAT("+SMSTATE?\r\n", sizeof("+SMSTATE?\r\n"), 0);
+    sendAT("+SMSTATE?\r", strlen("+SMSTATE?\r"), 0);
     appStatus = waitResponse(3000, "+SMSTATE: ", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
     if(appStatus == 1){
     	return GetIntResponse();
@@ -45,31 +45,31 @@ static void connect_mqtt(void){
 	uint8_t appStatus = 0;
 
 	snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
-	sendAT(buffer, sizeof(buffer), 0);
+	sendAT(buffer, strlen(buffer), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
-	sendAT(buffer, sizeof(buffer), 0);
+	sendAT(buffer, strlen(buffer), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
-	sendAT(buffer, sizeof(buffer), 0);
+	sendAT(buffer, strlen(buffer), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
-	sendAT(buffer, sizeof(buffer), 0);
+	sendAT(buffer, strlen(buffer), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	do{
-		sendAT("+SMCONN\r\n", sizeof("+SMCONN\r\n"), 0);
+		sendAT("+SMCONN\r\n", strlen("+SMCONN\r\n"), 0);
 		appStatus = waitResponse(3000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 		while(appStatus != 1){
 		}
@@ -87,31 +87,37 @@ void test_all_functionality(void){
 	int preferredMode = 0;
 	SIM70xxRegStatus RegStatus = REG_UNKNOWN;
 
+	initModem();
 
 	/* Initial validation of Send AT */
-	function_status = sendAT("Probando\r\n", sizeof("Probando\r\n"), 0);
+	while(1 != function_status){
+//		function_status = sendAT("A", strlen("A"), 500);
+//		function_status = sendAT("T", strlen("T"), 500);
+//		function_status = sendAT("A", strlen("A"), 500);
+//		function_status = sendAT("T", strlen("T"), 500);
+		function_status = sendAT("AT\r", strlen("AT\r"), 0);
+		function_status = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
+	function_status = sendAT("Probando\r\n", strlen("Probando\r\n"), 0);
 	function_status = waitResponse(100000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(1 != function_status);
 
-	function_status = sendAT("Probando\r\n", sizeof("Probando\r\n"), 0);
+	function_status = sendAT("Probando\r\n", strlen("Probando\r\n"), 0);
 	function_status = waitResponse(100000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(1 != function_status);
 
-	function_status = sendAT("Probando\r\n", sizeof("Probando\r\n"), 0);
-	function_status = waitResponse(100000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(1 != function_status);
-
-	function_status = sendAT("OK\r\n", sizeof("OK\r\n"), 100);
+	function_status = sendAT("OK\r\n", strlen("OK\r\n"), 100);
 	/* Try out the Wait Response implementation, expectation is to receive an OK so default parameters are given */
 	function_status = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(1 != function_status);
 
-	function_status = sendAT("ERROR\r\n", sizeof("ERROR\r\n"), 0);
+	function_status = sendAT("ERROR\r\n", strlen("ERROR\r\n"), 0);
 	/* Try out the Wait Response implementation, expectation is to receive an ERROR so default parameters are given */
 	function_status = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(2 != function_status);
 
-	function_status = sendAT("OUTOFBOUNDS\r\n", sizeof("OUTOFBOUNDS\r\n"), 0);
+	function_status = sendAT("OUTOFBOUNDS\r\n", strlen("OUTOFBOUNDS\r\n"), 0);
 	/* Try out the Wait Response implementation, expectation is to receive an OUTOFBOUNDS so default parameters are given and expected 0 */
 	function_status = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(0 != function_status);
@@ -192,44 +198,62 @@ void application_iot(void){
 	uint8_t appStatus = 0;
 	initModem();
 
+	/* Wait for the Auto-Baudrate to occur */
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
+	/* Disable ECHO */
+	sendAT("ATE0\r", strlen("ATE0\r"), 0);
+
 	/* Verify if the SIM CARD is inserted */
 	simStatus = getSimStatus(1000);
 	if(simStatus != SIM_READY){
 		/* Send status message to indicate is not working */
 	}
 
+	sendAT("\r", strlen("\r"), 0);
+	Delay(5000);
+
 	/* Disable RF functionality of the modem */
-	sendAT("+CFUN=0\r\n", sizeof("+CFUN=0\r\n"), 0);
+	sendAT("+CFUN=0\r", strlen("+CFUN=0\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
 		/* Disable RF failed */
 	}
 
+	Delay(10000);
+
 	if(!setNetworkMode(Automatic_Network)){
 		/* Network Mode Configuration failed */
 	}
+
+	Delay(5000);
 
 	if(setPreferredMode(Modem_CATM)){
 		/* Preferred Mode Configuration failed */
 	}
 
+	Delay(10000);
+
 	// Set the APN manually. Some operators need to set APN first when registering the network.
 	/* TODO: modify emnify information for personal implementation */
-	sendAT("+CGDCONT=1,\"IP\",\"emnify\"\r\n", sizeof("+CGDCONT=1,\"IP\",emnify\"\r\n"), 0);
+	sendAT("+CGDCONT=1,\"IP\",\"internet.itelcel.com\"\r", strlen("+CGDCONT=1,\"IP\",internet.itelcel.com\"\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
 		/* Set Operators failed */
 	}
 
 	// Set the APN manually. Some operators need to set APN first when registering the network.
-	sendAT("+CNCFG=0,1,\"emnify\"\r\n", sizeof("+CNCFG=0,1,\"emnify\"\r\n"), 0);
+	sendAT("+CNCFG=0,1,\"internet.itelcel.com\"\r", strlen("+CNCFG=0,1,\"internet.itelcel.com\"\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
 		/* Config apn Failed */
 	}
 
 	/* Enable RF functionality of the modem */
-	sendAT("+CFUN=1\r\n", sizeof("+CFUN=0\r\n"), 0);
+	sendAT("+CFUN=1\r", strlen("+CFUN=0\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
 		/* Enable RF failed */
@@ -245,7 +269,7 @@ void application_iot(void){
 
 	if(!isGprsConnected()){
 
-		sendAT("+CNACT=0,1\r\n", sizeof("+CNACT=0,1\r\n"), 0);
+		sendAT("+CNACT=0,1\r", strlen("+CNACT=0,1\r"), 0);
 		appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 		if(appStatus != 1){
 			/* Activate network bearer Failed! */
@@ -253,11 +277,11 @@ void application_iot(void){
 	}
 
     // Before connecting, you need to confirm that the time has been synchronized.
-	sendAT("+CCLK?\r\n", sizeof("+CCLK?\r\n"), 0);
+	sendAT("+CCLK?\r", strlen("+CCLK?\r"), 0);
 	appStatus = waitResponse(30000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	// If it is already connected, disconnect it first
-	sendAT("+SMDISC\r\n", sizeof("+SMDISC\r\n"), 0);
+	sendAT("+SMDISC\r", strlen("+SMDISC\r"), 0);
 	appStatus = waitResponse(30000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	connect_mqtt();
@@ -269,9 +293,14 @@ void application_iot(void){
 		} else {
 			/* Here will go the desired application, in the use-case it was a moisture sensor */
 			snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic, 5);
-			sendAT(buffer, sizeof(buffer), 0);
-			if(1 == waitResponse(30000, ">", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-
+			sendAT(buffer, strlen(buffer), 0);
+			if(1 == waitResponse(30000, NULL_PTR, ">", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+				sendAT("5\r", strlen("5\r"), 0);
+				if (1 == waitResponse(1000,  NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+					/* Successful to publish */
+				} else {
+					/* Failed to publish */
+				}
 			}
 		}
 	}
