@@ -329,7 +329,7 @@ IP_address getLocalIP(void){
 
 	/* Send the command to retrieve the local IP of the SIM */
 	sendAT("+CNACT?\r", sizeof("+CNACT?\r"), 0);
-	if(1 != waitResponseImpl(0, NULL_PTR, "\r\n+CNACT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+	if(1 != waitResponse(0, NULL_PTR, "\r\n+CNACT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 		tmpIP[0] = '\0';
 	}
 	/* Wait for the message to send \" */
@@ -359,6 +359,7 @@ IP_address getLocalIP(void){
 SimStatus getSimStatus(uint32_t timeout_ms){
 	uint32_t time_measure = 0;
 	uint8_t status = 0;
+	SimStatus RetVal = SIM_ERROR;
 
 	char Resp_Ready[] 	= "READY";
 	char Resp_Pin[] 	= "SIM PIN";
@@ -378,36 +379,31 @@ SimStatus getSimStatus(uint32_t timeout_ms){
 		sendAT("+CPIN?\r", strlen("+CPIN?\r"), 0);
 
 		/* Verify that the response obtained first corresponds to +CPIN */
-		if (waitResponse(0, NULL_PTR, "+CPIN:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR) != 1) {
-			//Delay(100);
-			continue;
-		}
-
-		/* Verify that the response obtained matches one of the possible 5 answers */
-		status = waitResponse(0, NULL_PTR, Resp_Ready, Resp_Pin, Resp_Puk, Resp_Insrt, Resp_NotReady, NULL_PTR, NULL_PTR);
-
-		/* Wait until next response is obtained */
-		waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+		status = waitResponse(0, NULL_PTR, "+CPIN: READY", "+CPIN: SIM PIN", "+CPIN: SIM PUK", "+CPIN: NOT INSERTED", "+CPIN: NOT READY", NULL_PTR, NULL_PTR);
 
 		/* Analyze if the response obtained matches "READY",
 		 * otherwise it will report and error code
 		 */
 		switch (status) {
-		case 2:
-			return SIM_ERROR;
-		case 3:
-			return SIM_LOCKED;
 		case 1:
-			return SIM_READY;
+			RetVal = SIM_READY;
+			break;
+		case 2:
+			RetVal = SIM_LOCKED;
+			break;
+		case 3:
+			RetVal = SIM_LOCKED;
+			break;
 		default:
-			return SIM_ERROR;
+			RetVal = SIM_ERROR;
+			break;
 		}
-	}while(time_measure < timeout_ms);
+	}while((time_measure < timeout_ms) && (status == 0));
 
 	DeinitTimeoutTimer();
 
 	/* If a timeout ocurred, the return value is SIM_ERROR */
-	return SIM_ERROR;
+	return RetVal;
 }
 
 /**
@@ -420,6 +416,9 @@ SimStatus getSimStatus(uint32_t timeout_ms){
 * implements     setNetworkMode
 */
 bool setNetworkMode(const char* pMode) {
+	uint8_t status = 0;
+	bool RetVal = false;
+
 	// 2 Automatic
 	// 13 GSM only
 	// 38 LTE only
@@ -427,13 +426,15 @@ bool setNetworkMode(const char* pMode) {
 	sendAT(pMode, strlen(pMode), 0);
 	sendAT("\r", strlen("\r"), 0);
 
-	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-		return true;
+	status = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	if(1 == status){
+		RetVal = true;
 	} else {
-		return false;
+		RetVal = false;
 	}
 
-	return false;
+	return RetVal;
 }
 
 /**
@@ -476,23 +477,26 @@ bool setPreferredMode(char* pMode) {
 	// 1 CAT-M
 	// 2 NB-IoT
 	// 3 CAT-M and NB-IoT
-	bool status = false;
+	uint8_t resp = 0;
+	bool RetVal = false;
 
 	/* Send the AT command to set the preferred mode in the SIM */
 	sendAT("+CMNB=", strlen("+CMNB="), 0);
 	/* Send the specific mode that needs to be set in the SIM */
 	sendAT(pMode, strlen(pMode), 0);
-	sendAT("\r", strlen("\r"), 100);
+	sendAT("\r", strlen("\r"), 0);
+
+	resp = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Wait to receive an OK response, with default value */
-	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-		status = true;
+	if(1 == resp){
+		RetVal = true;
 	} else {
-		status = false;
+		RetVal = false;
 	}
 
 	/* Return end status */
-	return status;
+	return RetVal;
 }
 
 /**
@@ -539,25 +543,23 @@ int getPreferredMode(void) {
 bool isGprsConnected(void) {
 	IP_address localIP;
 	IP_address cmpIP = {0};
+	uint8_t resp = 0;
 
 	int res = 0;
-	sendAT("+CGATT?\r", sizeof("+CGATT?\r"), 0);
-	if(1 != waitResponse(0, NULL_PTR, "+CGATT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+	 resp = waitResponse(0, NULL_PTR, "+CGATT: 0\r\n", "+CGATT: 1\r\n", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	if(resp == 0){
 		return false;
-	}
-	res = GetIntBefore("\n");
-	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	if(res != 1){
-		return false;
+	} else {
+		res = resp-1;
 	}
 
 	localIP = getLocalIP();
 
 	if (!compareIP(localIP, cmpIP)){
-
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 /**
@@ -582,14 +584,19 @@ int8_t getRegistrationStatusXREG(const char* regCommand){
 	sendAT("?\r", strlen("?\r"), 0);
 
 	/* Read the expected response comparing against CREG, CGREG and CEREG */
-	resp = waitResponse(0, NULL_PTR, CREG, CGREG, CEREG, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	if(resp != 1 && resp != 2 && resp != 3){
-		status = 0;
+	resp = waitResponse(0, NULL_PTR, ",0", ",1", ",2", ",3", ",4", ",5", NULL_PTR);
+	//	resp = waitResponse(0, Response, CREG, CGREG, CEREG, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	if(resp == 0){
+		status = REG_UNKNOWN;
 	} else {
-		streamSkipUntil(',', 0);
-
-		status = GetIntResponse();
-		waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+		status = resp-1;
+//		/* Clear internal RX buffer before using it */
+//		memset((uint8_t*)Response, 0, MAX_LEN);
+//
+//		resp = waitResponse(0, Response, ",", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+//
+//		status = GetIntResponse();
+//		waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	}
 
 

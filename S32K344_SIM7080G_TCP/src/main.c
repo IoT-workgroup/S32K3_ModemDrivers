@@ -41,6 +41,7 @@ int main(void)
 
 	init_device_drivers();
 //	test_all_functionality();
+//	application_diagnosis();
 	application_iot();
 
 
