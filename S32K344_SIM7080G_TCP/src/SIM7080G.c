@@ -473,7 +473,7 @@ int getNetworkMode(void) {
 * @retval		 2 - Communication failed
 * implements     setPreferredMode
 */
-bool setPreferredMode(char* pMode) {
+bool setPreferredMode(const char* pMode) {
 	// 1 CAT-M
 	// 2 NB-IoT
 	// 3 CAT-M and NB-IoT

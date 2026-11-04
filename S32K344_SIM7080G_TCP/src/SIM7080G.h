@@ -269,7 +269,7 @@ int getNetworkMode(void);
 * @retval		 2 - Communication failed
 * implements     setPreferredMode
 */
-bool setPreferredMode(char* pMode);
+bool setPreferredMode(const char* pMode);
 
 /**
 * @brief         Reads the current Preferred Mode in which the modem is configured to operate

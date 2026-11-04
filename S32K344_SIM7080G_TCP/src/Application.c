@@ -9,10 +9,11 @@
 #define IO_USERNAME  "serviti"
 
 /*  Adafruit IO Key */
-
+#define IO_KEY      "aio_THJH42ofMYi1Q2NzoH4q5racYeYa"
 #define IO_TOPIC	"Use-Case"
 
 const char Automatic_Network[] = "2";
+const char LTE[] = "38";
 const char Modem_CATM[] = "1";
 const char NB_IOT[]="2";
 const char NB_IOT_AND_CATM[]="3";
@@ -48,30 +49,30 @@ static void connect_mqtt(void){
 
 	snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
 	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
 	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
 	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
 	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(appStatus != 1){
 	}
 
 	do{
-		sendAT("+SMCONN\r\n", strlen("+SMCONN\r\n"), 0);
+		sendAT("+SMCONN\r", strlen("+SMCONN\r"), 0);
 		appStatus = waitResponse(3000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 		while(appStatus != 1){
 		}
@@ -114,11 +115,13 @@ static getAllStatus(void){
 	/* Request for the available bands */
 	sendAT("+ANTENALLCFG?\r", strlen("+ANTENALLCFG?\r"), 1000);
 
-	/* Verify the current mode and list of available operators */
-	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
-
-	/* Wait until a response comes from the COPS command */
-	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+//	/* Verify the current mode and list of available operators */
+//	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
+//
+//	Delay(100000);
+//
+//	/* Wait until a response comes from the COPS command */
+//	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 }
 
@@ -260,7 +263,7 @@ void application_diagnosis(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
-	getAllStatus();
+//	getAllStatus();
 
 	/* Indicate that the RF functionality will be disabled and wait for 10s for the reset to occur */
 	sendAT("+CFUN=0\r", strlen("+CFUN=0\r"), 10000);
@@ -276,10 +279,14 @@ void application_diagnosis(void){
 	/* Send command to enable RF functionality and wait for 10s for the reset */
 	sendAT("+CFUN=1\r", strlen("+CFUN=1\r"), 10000);
 
-	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+//	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+	sendAT("+CBANDCFG=\"CAT-M\",2,4,28\r", strlen("+CBANDCFG=\"CAT-M\",2,4,28\r"), 1000);
+
 
 	/* Verify the current mode and list of available operators */
 	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
+
+	Delay(100000);
 
 	/* Wait until a response comes from the COPS command */
 	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
@@ -325,15 +332,6 @@ void application_iot(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
-	sendAT("+CFUN=?\r", strlen("+CFUN=?\r"), 0);
-
-
-	sendAT("+CSQ\r", strlen("+CSQ\r"), 0);
-
-	sendAT("+CFUN=1\r", strlen("+CFUN=1\r"), 0);
-
-	Delay(10000);
-
 	/* Verify if the SIM CARD is inserted */
 	simStatus = getSimStatus(1000);
 	if(simStatus != SIM_READY){
@@ -341,67 +339,67 @@ void application_iot(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
-//	sendAT("\r", strlen("\r"), 0);
-//	Delay(5000);
-
-//	/* Disable RF functionality of the modem */
+	/* Disable RF functionality of the modem */
 	sendAT("+CFUN=0\r", strlen("+CFUN=0\r"), 0);
-//	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-//	if(appStatus != 1){
-//		/* Disable RF failed */
-//		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
-//		while(1);
-//	}
 
+	/* Wait for 10 seconds after disabling the RF to start configuring the device */
 	Delay(10000);
 
-
-
-	if(!setNetworkMode(Automatic_Network)){
-		/* Network Mode Configuration failed */
-		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
-		while(1);
+	/* Configure the network mode to be CAT-M LTE */
+	while(!setNetworkMode(LTE)){
+		/* If network mode configuration failed try again after 1 second*/
+		Delay(1000);
 	}
 
-	Delay(5000);
-
-	if(!setPreferredMode(NB_IOT_AND_CATM)){
-		/* Preferred Mode Configuration failed */
-		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
-		while(1);
+	/* Configure the preferred mode to be CAT-M only */
+	while(!setPreferredMode(Modem_CATM)){
+		/* If preferred mode configuration failed try again after 1 second */
+		Delay(1000);
 	}
 
-	Delay(10000);
-
-//	// Set the APN manually. Some operators need to set APN first when registering the network.
-//	/* TODO: modify emnify information for personal implementation */
+	/* Set the APN manually. Some operators need to set APN first when registering the network. */
 	sendAT("+CGDCONT=1,\"IP\",\"internet.itelcel.com\"\r", strlen("+CGDCONT=1,\"IP\",\"internet.itelcel.com\"\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
 		/* Set Operators failed */
 	}
 
-	// Set the APN manually. Some operators need to set APN first when registering the network.
+	/* Set the APN manually. Some operators need to set APN first when registering the network. */
 	sendAT("+CNCFG=0,1,\"internet.itelcel.com\"\r", strlen("+CNCFG=0,1,\"internet.itelcel.com\"\r"), 0);
-//	sendAT("+CNCFG=0,1,\"internet.itelcel.com\",\"webgprs\",\"webgprs2002\"\r", strlen("+CNCFG=0,1,\"internet.itelcel.com\",\"webgprs\",\"webgprs2002\"\r"), 0);
 	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	if(appStatus != 1){
-		/* Config apn Failed */
+		/* Config APN Failed */
 	}
 
 	/* Enable RF functionality of the modem */
 	sendAT("+CFUN=1\r", strlen("+CFUN=1\r"), 0);
-//	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-//	if(appStatus != 1){
-//		/* Enable RF failed */
-//	}
 
+	/* Wait for 10 seconds after enabling the RF functionality to be sure it's working */
 	Delay(10000);
 
-//	/* Define PLMN to look for the TELCEL one */
-	sendAT("+COPS=0\r", strlen("+COPS=0\r"), 0);
-	appStatus = waitResponse(1200000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	/* Verify SIM CARD status after the RF functionality is up */
+	simStatus = getSimStatus(1000);
+	while(simStatus != SIM_READY){
+		/* Keep checking the status until the SIM is ready */
+		simStatus = getSimStatus(1000);
+	}
 
+	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+
+	/* Verify the current mode and list of available operators */
+	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
+
+	Delay(200000);
+
+	/* Wait until a response comes from the COPS command */
+	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+
+	/* Define PLMN to look for the TELCEL one */
+//	sendAT("+COPS=0\r", strlen("+COPS=0\r"), 0);
+//	appStatus = waitResponse(1200000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	regStatus = getRegistrationStatus();
 	while (regStatus != REG_OK_HOME && regStatus != REG_OK_ROAMING){
 		regStatus = getRegistrationStatus();
 		Delay(1000);
@@ -411,6 +409,7 @@ void application_iot(void){
 	// Activate network bearer, APN can not be configured by default,
 	// if the SIM card is locked, please configure the correct APN and user password, use the gprsConnect() method
 
+	/* Verify if the GPRS is connected already */
 	if(!isGprsConnected()){
 
 		sendAT("+CNACT=0,1\r", strlen("+CNACT=0,1\r"), 0);
