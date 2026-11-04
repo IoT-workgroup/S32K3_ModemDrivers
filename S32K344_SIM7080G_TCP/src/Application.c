@@ -9,7 +9,6 @@
 #define IO_USERNAME  "serviti"
 
 /*  Adafruit IO Key */
-#define IO_KEY       "aio_THJH42ofMYi1Q2NzoH4q5racYeYa"
 
 #define IO_TOPIC	"Use-Case"
 
