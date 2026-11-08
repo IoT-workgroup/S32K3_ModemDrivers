@@ -49,8 +49,6 @@
 								</option>
 								<option id="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.mcpu.392640440" name="Arm family" superClass="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.mcpu" useByScannerDiscovery="true" value="com.nxp.s32ds.cle.arm.mbs.arm32.bare.tool.c.compiler.option.target.mcpu.cortex-m7" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.preprocessor.def.symbols.1189016925" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="D_CACHE_ENABLE"/>
-									<listOptionValue builtIn="false" value="I_CACHE_ENABLE"/>
 									<listOptionValue builtIn="false" value="ENABLE_FPU"/>
 									<listOptionValue builtIn="false" value="GCC"/>
 									<listOptionValue builtIn="false" value="CPU_S32K344"/>

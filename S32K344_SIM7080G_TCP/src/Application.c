@@ -83,6 +83,7 @@ static void connect_mqtt(void){
 
 /* Function to retrieve overall status */
 static getAllStatus(void){
+	uint8_t appStatus = 0;
 	/* Display Product Information */
 	sendAT("ATI\r", strlen("ATI\r"), 1000);
 
@@ -100,6 +101,12 @@ static getAllStatus(void){
 	/* Verify which bands are available */
 	sendAT("+CBANDCFG?\r", strlen("+CBANDCFG?\r"), 20000);
 
+	appStatus = 0;
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
 	/* Verify EPS Network Registration Status */
 	sendAT("+CEREG?\r", strlen("+CEREG?\r"), 1000);
 
@@ -111,6 +118,35 @@ static getAllStatus(void){
 
 	/* Obtain Inquiry UE System Information */
 	sendAT("+CPSI?\r", strlen("+CPSI?\r"), 1000);
+
+	sendAT("+CGATT?\r", strlen("+CGATT?\r"), 1000);
+
+	sendAT("+CGDCONT?\r", strlen("+CGDCONT?\r"), 1000);
+
+	sendAT("+CSPN?\r", strlen("+CSPN?\r"), 1000);
+
+	appStatus = 0;
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
+	sendAT("+CIMI\r", strlen("+CIMI\r"), 1000);
+
+	sendAT("+CEER\r", strlen("+CEER\r"), 1000);
+
+	/* Verify the current mode and list of available operators */
+	sendAT("+COPS?\r", strlen("+COPS?\r"), 0);
+
+	/* Wait until a response comes from the COPS command */
+	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+
+	appStatus = 0;
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
 
 	/* Request for the available bands */
 	sendAT("+ANTENALLCFG?\r", strlen("+ANTENALLCFG?\r"), 1000);
@@ -249,6 +285,10 @@ void application_diagnosis(void){
 	/* Enable modem with reset trigger */
 	initModem();
 
+	/***************************************/
+	/* Setting up communication with modem */
+	/***************************************/
+
 	/* Wait for the Auto-Baudrate to occur */
 	while(1 != appStatus){
 		sendAT("AT\r", strlen("AT\r"), 0);
@@ -263,7 +303,14 @@ void application_diagnosis(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
-//	getAllStatus();
+	sendAT("+CEREG=2\r", strlen("+CEREG=2\r"), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	getAllStatus();
+
+	/*****************************************************************************/
+	/* Test out functionality with automatic mode for Network and Preferred mode */
+	/*****************************************************************************/
 
 	/* Indicate that the RF functionality will be disabled and wait for 10s for the reset to occur */
 	sendAT("+CFUN=0\r", strlen("+CFUN=0\r"), 10000);
@@ -272,6 +319,10 @@ void application_diagnosis(void){
 	sendAT("+CNMP=38\r", strlen("+CNMP=38\r"), 0);
 	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
+	/* Send command to set the Automatic mode */
+//	sendAT("+CNMP=2\r", strlen("+CNMP=2\r"), 0);
+//	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
 	/* Send command to set the CAT-M functionality on both preferred mode and network mode */
 	sendAT("+CMNB=1\r", strlen("+CMNB=1\r"), 0);
 	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
@@ -279,24 +330,63 @@ void application_diagnosis(void){
 	/* Send command to enable RF functionality and wait for 10s for the reset */
 	sendAT("+CFUN=1\r", strlen("+CFUN=1\r"), 10000);
 
-//	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
-	sendAT("+CBANDCFG=\"CAT-M\",2,4,28\r", strlen("+CBANDCFG=\"CAT-M\",2,4,28\r"), 1000);
+	appStatus = 0;
+	/* Wait for the Auto-Baudrate to occur */
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
 
+	/* Verify status of the signals received */
+
+//	sendAT("+CEREG?\r", strlen("+CEREG?\r"), 0);
+//	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+//
+//	/* Obtain Inquiry UE System Information */
+//	sendAT("+CPSI?\r", strlen("+CPSI?\r"), 0);
+//	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+//
+//	/* Verify quality signal from the Antenna, expected a different value from 99,99 */
+//	sendAT("+CSQ\r", strlen("+CSQ\r"), 0);
+//	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+//
+//	/* Verify the current mode and list of available operators */
+//	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 0);
+
+//	/* Wait until a response comes from the COPS command */
+//	waitResponse(9999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+
+//	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+	sendAT("+CBANDCFG=\"CAT-M\",2,4,5,28\r", strlen("+CBANDCFG=\"CAT-M\",2,4,5,28\r"), 1000);
+	waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	/* Set the APN manually. Some operators need to set APN first when registering the network. */
+	sendAT("+CGDCONT=1,\"IP\",\"internet.itelcel.com\"\r", strlen("+CGDCONT=1,\"IP\",\"internet.itelcel.com\"\r"), 0);
+	appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	if(appStatus != 1){
+		/* Set Operators failed */
+	}
 
 	/* Verify the current mode and list of available operators */
-	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
-
-	Delay(100000);
+	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 0);
 
 	/* Wait until a response comes from the COPS command */
 	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-
 
 	while(1){
 		/* Reach the end of the diagnosis application */
 		/* Keep sending the CEREG command to verify connection every ten seconds */
 		while(GetReg != 0){
+			/* Wait for the Auto-Baudrate to occur */
+			appStatus = 0;
+			while(1 != appStatus){
+				sendAT("AT\r", strlen("AT\r"), 0);
+				appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+			}
+
 			sendAT("+CEREG?\r", strlen("+CEREG?\r"), 1000);
+
 			sendAT("+CGREG?\r", strlen("+CGREG?\r"), 10000);
 		}
 
