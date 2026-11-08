@@ -303,8 +303,25 @@ void application_diagnosis(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
+	/* Copilot requested testing */
+
 	sendAT("+CEREG=2\r", strlen("+CEREG=2\r"), 0);
 	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	sendAT("+CMEE=2\r", strlen("+CMEE=2\r"), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	sendAT("+COPS=1,2,\"334020\",7\r", strlen("+COPS=1,2,\"334020\",7\r"), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+	Delay(300000);
+
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
+
 
 	getAllStatus();
 
