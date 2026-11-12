@@ -303,18 +303,36 @@ void application_diagnosis(void){
 		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
+	/* Verify if the SIM CARD is inserted */
+	simStatus = getSimStatus(1000);
+	while(simStatus != SIM_READY){
+		/* Send status message to indicate is not working */
+		simStatus = getSimStatus(1000);
+	}
+
+	appStatus = 0;
+
 	/* Copilot requested testing */
+	while(1 != appStatus){
+		sendAT("AT\r", strlen("AT\r"), 0);
+		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
 
 	sendAT("+CEREG=2\r", strlen("+CEREG=2\r"), 0);
 	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
+	sendAT("+CEREG?\r", strlen("+CEREG?\r"), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+
+
 	sendAT("+CMEE=2\r", strlen("+CMEE=2\r"), 0);
 	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
-	sendAT("+COPS=1,2,\"334020\",7\r", strlen("+COPS=1,2,\"334020\",7\r"), 0);
+	sendAT("+COPS=2\r", strlen("+COPS=2\r"), 300000);
 	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
-	Delay(300000);
+	sendAT("+COPS=0\r", strlen("+COPS=0\r"), 300000);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	while(1 != appStatus){
 		sendAT("AT\r", strlen("AT\r"), 0);
@@ -333,7 +351,7 @@ void application_diagnosis(void){
 	sendAT("+CFUN=0\r", strlen("+CFUN=0\r"), 10000);
 
 	/* Send command to set the CAT-M functionality on both preferred mode and network mode */
-	sendAT("+CNMP=38\r", strlen("+CNMP=38\r"), 0);
+	sendAT("+CNMP=38\r", strlen("+CNMP=2\r"), 0);
 	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Send command to set the Automatic mode */
@@ -341,7 +359,7 @@ void application_diagnosis(void){
 //	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Send command to set the CAT-M functionality on both preferred mode and network mode */
-	sendAT("+CMNB=1\r", strlen("+CMNB=1\r"), 0);
+	sendAT("+CMNB=3\r", strlen("+CMNB=3\r"), 0);
 	waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Send command to enable RF functionality and wait for 10s for the reset */
@@ -374,8 +392,8 @@ void application_diagnosis(void){
 //	waitResponse(9999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 
-//	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
-	sendAT("+CBANDCFG=\"CAT-M\",2,4,5,28\r", strlen("+CBANDCFG=\"CAT-M\",2,4,5,28\r"), 1000);
+	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+//	sendAT("+CBANDCFG=\"CAT-M\",2,4,5,28\r", strlen("+CBANDCFG=\"CAT-M\",2,4,5,28\r"), 1000);
 	waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Set the APN manually. Some operators need to set APN first when registering the network. */
@@ -386,7 +404,10 @@ void application_diagnosis(void){
 	}
 
 	/* Verify the current mode and list of available operators */
-	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 0);
+//	sendAT("+COPS=1,2,\"334020\",8\r", strlen("+COPS=1,2,\"334020\",7\r"), 0);
+
+//	/* Verify the current mode and list of available operators */
+//	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 0);
 
 	/* Wait until a response comes from the COPS command */
 	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
@@ -459,7 +480,7 @@ void application_iot(void){
 	}
 
 	/* Configure the preferred mode to be CAT-M only */
-	while(!setPreferredMode(Modem_CATM)){
+	while(!setPreferredMode(NB_IOT_AND_CATM)){
 		/* If preferred mode configuration failed try again after 1 second */
 		Delay(1000);
 	}
@@ -491,16 +512,14 @@ void application_iot(void){
 		simStatus = getSimStatus(1000);
 	}
 
-	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+//	sendAT("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r", strlen("+CBANDCFG=\"CAT-M\",1,2,3,4,5,8,12,13,14,18,19,20,25,26,27,28,66,85\r"), 1000);
+//	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)
 
 	/* Verify the current mode and list of available operators */
-	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 200000);
-
-	Delay(200000);
+//	sendAT("+COPS=?\r", strlen("+COPS=?\r"), 10000);
 
 	/* Wait until a response comes from the COPS command */
-	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-
+//	waitResponse(999999, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
 	/* Define PLMN to look for the TELCEL one */
 //	sendAT("+COPS=0\r", strlen("+COPS=0\r"), 0);
