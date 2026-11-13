@@ -14,7 +14,7 @@ static uint8_t *sockets[MODEM_MUX_COUNT];
 static uint8_t *certificate[MODEM_MUX_COUNT];
 
 uint32 remainingBytes = 0;
-uint8 Rx_Buffer[MAX_LEN] = {0};
+char Rx_Buffer[MAX_LEN] = {0};
 
 /**
 * @brief       	Proceeds with hardware initialization for the SIM7080G Modem.
@@ -191,12 +191,16 @@ bool compareIP(IP_address IP1, IP_address IP2){
 * implements    IpFromString
 */
 IP_address IpFromString(uint8_t* IPstring){
-	uint8_t Parts[4] = {0};
+	uint8_t Parts[IPV4_ELEMENTS] = {0};
+	uint8_t StringIndex = 0;
+	uint8_t IpIndex = 0;
 
-	Parts[0] = IPstring[0];
-	Parts[1] = IPstring[1];
-	Parts[2] = IPstring[2];
-	Parts[3] = IPstring[3];
+	/* Look for the start of the IP address */
+	for(StringIndex = 0; (StringIndex < MAX_LEN && IpIndex < IPV4_ELEMENTS); StringIndex++){
+		if((IPstring[StringIndex] == '"') || (IPstring[StringIndex] == '.')){
+			Parts[IpIndex++] = atoi((const char *)&IPstring[StringIndex+1]);
+		}
+	}
 
 	return IPAddress(Parts[0], Parts[1], Parts[2], Parts[3]);
 }
@@ -318,7 +322,6 @@ bool TestAT(uint32_t timeout_ms) {
 * implements     getLocalIP
 */
 IP_address getLocalIP(void){
-	uint8_t tmpIP[4] = {0};
 	IP_address localIP;
 
 	/* Clean the local IP structure */
@@ -327,20 +330,16 @@ IP_address getLocalIP(void){
 	localIP.bytes[2] = 0;
 	localIP.bytes[3] = 0;
 
-	/* Send the command to retrieve the local IP of the SIM */
-	sendAT("+CNACT?\r", sizeof("+CNACT?\r"), 0);
-	if(1 != waitResponse(0, NULL_PTR, "\r\n+CNACT:", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-		tmpIP[0] = '\0';
-	}
-	/* Wait for the message to send \" */
-	waitResponse(0, NULL_PTR, "\"", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	/* Store the received string in received localIP */
-	waitResponse(0, (char*)tmpIP, "", "\"", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	/* Wait for the OK response */
-	waitResponse(0, (char*)tmpIP, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	/* Clear Rx_Buffer for later analysis */
+	memset(Rx_Buffer, 0, MAX_LEN);
 
-	/* Translate the IP from string to IP structure */
-	localIP = IpFromString(tmpIP);
+	/* Send the command to retrieve the local IP of the SIM */
+	sendAT("+CNACT?\r", strlen("+CNACT?\r"), 0);
+	/* Wait for the response to finish with OK or another value and store it in internal buffer */
+	if(1 == waitResponse(0, Rx_Buffer, "OK\r\n", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		/* Translate the IP obtained from the response to IP structure */
+		localIP = IpFromString((uint8*)&Rx_Buffer[0]);
+	}
 
 	/* Return local IP with the specified structure */
 	return localIP;
@@ -541,25 +540,26 @@ int getPreferredMode(void) {
 * implements     setPreferredMode
 */
 bool isGprsConnected(void) {
+	bool RetVal = false;
 	IP_address localIP;
-	IP_address cmpIP = {0};
-	uint8_t resp = 0;
+	IP_address cmpIP = {
+		.bytes[0] = 0,
+		.bytes[1] = 0,
+		.bytes[2] = 0,
+		.bytes[3] = 0
+	};
 
-	int res = 0;
-	 resp = waitResponse(0, NULL_PTR, "+CGATT: 0\r\n", "+CGATT: 1\r\n", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	if(resp == 0){
-		return false;
-	} else {
-		res = resp-1;
+	sendAT("+CGATT?\r", strlen("+CGATT?\r"), 0);
+	if(2 == waitResponse(0, NULL_PTR, "+CGATT: 0\r\n", "+CGATT: 1\r\n", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		/* Wait 10ms before sending next command */
+		Delay(10);
+		localIP = getLocalIP();
+		if (!compareIP(localIP, cmpIP)){
+			RetVal = true;
+		}
 	}
 
-	localIP = getLocalIP();
-
-	if (!compareIP(localIP, cmpIP)){
-		return false;
-	}
-
-	return true;
+	return RetVal;
 }
 
 /**

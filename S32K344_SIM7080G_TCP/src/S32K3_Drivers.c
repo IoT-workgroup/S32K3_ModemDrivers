@@ -95,7 +95,7 @@ void init_device_drivers(void){
     Lpuart_Uart_Ip_Init(AT_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_3_VS_0);
 
     /* Initializes the UART driver */
-    Lpuart_Uart_Ip_Init(DEBUG_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_3_VS_0);
+    Lpuart_Uart_Ip_Init(DEBUG_UART_INSTANCE, &Lpuart_Uart_Ip_xHwConfigPB_6_VS_0);
 
 
     Lpi2c_Ip_MasterInit(I2C_AXP2101_INSTANCE, &I2c_Lpi2cMaster_HwChannel1_Channel0_VS_0);
@@ -173,14 +173,14 @@ void InitTimeoutTimerImpl(uint32_t milliseconds){
 	/* Convert the milliseconds parameters to the specific counts required to reach */
 	ms_count_conversion = milliseconds*(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
 
-	/* Start the STM timer with a defined start value */
-	Stm_Ip_StartTimer(STM_INST_1, STM_START_CNT_VALUE);
+	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
+	Stm_Ip_StartCounting(STM_INST_1, CH_0, ms_count_conversion);
 
 	/* Enable the compare channel as comparison will be monitored*/
 	Stm_Ip_EnableChannel(STM_INST_1, CH_0);
 
-	/* Set the compare value to monitor the counter value and raise the flag once the values are the same */
-	Stm_Ip_StartCounting(STM_INST_1, CH_0, ms_count_conversion);
+	/* Start the STM timer with a defined start value */
+	Stm_Ip_StartTimer(STM_INST_1, STM_START_CNT_VALUE);
 }
 
 /**
@@ -198,6 +198,18 @@ uint32_t GetCurrentTimeImpl(void){
 	milliseconds = milliseconds/(STM_CLOCK_FREQ/(STM_CLK_PRESCALER*1000));
 
 	return milliseconds;
+}
+
+/**
+* @brief       	Gets the timeout status based on the timer count.
+*
+* @api
+* @param[in]	 N/A
+* @return        TRUE if a the timeout time has been reached, FALSE otherwise
+* implements     Get Current Time
+*/
+boolean GetFlagTimeoutStatusImpl(void){
+	return Stm_Ip_GetInterruptStatusFlag(STM_INST_1, CH_0);;
 }
 
 /**
@@ -322,7 +334,7 @@ uint8_t waitResponseImpl(
 		}
 
 	/* This loop will occur until a expected response is received or until a timeout occurs */
-	}while(GetCurrentTimeImpl() < timeout_ms);
+	}while(!GetFlagTimeoutStatusImpl());
 
 	Lpuart_Uart_Ip_AbortReceivingData(AT_UART_INSTANCE);
 

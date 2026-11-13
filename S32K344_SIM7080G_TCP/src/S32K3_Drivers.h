@@ -34,7 +34,7 @@
 /**********			     UART					***********/
 /**********************************************************/
 /* Length of the message to be received from the console */
-#define MAX_LEN  					(64U)
+#define MAX_LEN  					(128U)
 
 /* UART to be used with the AT SIM7080G */
 #define AT_UART_INSTANCE  			(3U)
@@ -120,6 +120,15 @@ void InitTimeoutTimerImpl(uint32_t milliseconds);
 */
 uint32_t GetCurrentTimeImpl(void);
 
+/**
+* @brief       	Gets the timeout status based on the timer count.
+*
+* @api
+* @param[in]	 N/A
+* @return        TRUE if a the timeout time has been reached, FALSE otherwise
+* implements     Get Current Time
+*/
+boolean GetFlagTimeoutStatusImpl(void);
 
 /**
 * @brief       	DeInitialize the timer used for the timeout.

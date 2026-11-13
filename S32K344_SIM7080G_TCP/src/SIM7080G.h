@@ -10,9 +10,10 @@
 
 #include "Mcal.h"
 
+#define IPV4_ELEMENTS 	(4)
 
 typedef union {
-	uint8_t bytes[4];  // IPv4 address
+	uint8_t bytes[IPV4_ELEMENTS];  // IPv4 address
 	uint32_t dword;
 } IP_address;
 

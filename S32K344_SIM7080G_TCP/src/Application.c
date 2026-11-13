@@ -2,15 +2,11 @@
 #include "Application.h"
 #include "SIM7080G.h"
 #include "S32K3_Drivers.h"
+#include "secrets.h"
 #include <string.h>
 #include <stdio.h>
 
-/* Adafruit username */
-#define IO_USERNAME  "serviti"
-
-/*  Adafruit IO Key */
-#define IO_KEY      "aio_THJH42ofMYi1Q2NzoH4q5racYeYa"
-#define IO_TOPIC	"Use-Case"
+#define IO_TOPIC	"use-case"
 
 const char Automatic_Network[] = "2";
 const char LTE[] = "38";
@@ -24,65 +20,20 @@ const char server[]   = "io.adafruit.com";
 const int  port       = 8883;
 char username[] = IO_USERNAME;
 char password[] = IO_KEY;
-char clientID[] = "ESP32";
+char clientID[] = "s32k3";
 char topic[] = IO_TOPIC;
 
 
 static void connect_mqtt(void);
 
-static bool isConnect()
-{
-	uint8_t appStatus = 0;
+static void config_mqtt(void);
 
-    sendAT("+SMSTATE?\r", strlen("+SMSTATE?\r"), 0);
-    appStatus = waitResponse(3000, "+SMSTATE: ", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-    if(appStatus == 1){
-    	return GetIntResponse();
-    }
+static bool isConnect(void);
 
 
-    return false;
-}
-
-static void connect_mqtt(void){
-	uint8_t appStatus = 0;
-
-	snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
-	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(appStatus != 1){
-	}
-
-	snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
-	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(appStatus != 1){
-	}
-
-	snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
-	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(appStatus != 1){
-	}
-
-	snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
-	sendAT(buffer, strlen(buffer), 0);
-	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(appStatus != 1){
-	}
-
-	do{
-		sendAT("+SMCONN\r", strlen("+SMCONN\r"), 0);
-		appStatus = waitResponse(3000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-		while(appStatus != 1){
-		}
-	}while(appStatus != 1);
-
-	/* MQTT client connected */
-}
 
 /* Function to retrieve overall status */
-static getAllStatus(void){
+static void getAllStatus(void){
 	uint8_t appStatus = 0;
 	/* Display Product Information */
 	sendAT("ATI\r", strlen("ATI\r"), 1000);
@@ -457,14 +408,12 @@ void application_iot(void){
 	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 	while(1 != appStatus){
 		/* ECHO was not disabled */
-		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
 	/* Verify if the SIM CARD is inserted */
 	simStatus = getSimStatus(1000);
 	if(simStatus != SIM_READY){
 		/* Send status message to indicate is not working */
-		Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 	}
 
 	/* Disable RF functionality of the modem */
@@ -531,16 +480,18 @@ void application_iot(void){
 		Delay(1000);
 	}
 
+	/* Indicate that registration was successful */
+	Siul2_Dio_Ip_SetGPDO(SIUL2_INSTANCE, 31);
 
 	// Activate network bearer, APN can not be configured by default,
 	// if the SIM card is locked, please configure the correct APN and user password, use the gprsConnect() method
 
 	/* Verify if the GPRS is connected already */
-	if(!isGprsConnected()){
+	while(!isGprsConnected()){
 
 		sendAT("+CNACT=0,1\r", strlen("+CNACT=0,1\r"), 0);
 		appStatus = waitResponse(1000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-		if(appStatus != 1){
+		while(appStatus != 1){
 			/* Activate network bearer Failed! */
 		}
 	}
@@ -553,7 +504,9 @@ void application_iot(void){
 	sendAT("+SMDISC\r", strlen("+SMDISC\r"), 0);
 	appStatus = waitResponse(30000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 
-	connect_mqtt();
+	config_mqtt();
+
+//	connect_mqtt();
 
 	for(;;){
 		if(!isConnect()){
@@ -561,10 +514,10 @@ void application_iot(void){
 			connect_mqtt();
 		} else {
 			/* Here will go the desired application, in the use-case it was a moisture sensor */
-			snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic, 5);
+			snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1\r", username, topic, strlen("Hello_S32K3"));
 			sendAT(buffer, strlen(buffer), 0);
-			if(1 == waitResponse(30000, NULL_PTR, ">", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-				sendAT("5\r", strlen("5\r"), 0);
+			if(1 == waitResponse(300000, NULL_PTR, ">", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+				sendAT("Hello_S32K3", strlen("Hello_S32K3"), 0);
 				if (1 == waitResponse(1000,  NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
 					/* Successful to publish */
 				} else {
@@ -573,5 +526,60 @@ void application_iot(void){
 			}
 		}
 	}
+}
+
+static void config_mqtt(void){
+	uint8_t appStatus = 0;
+
+	snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d\r", server, port);
+	sendAT(buffer, strlen(buffer), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	while(appStatus != 1){
+	}
+
+	snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"\r", username);
+	sendAT(buffer, strlen(buffer), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	while(appStatus != 1){
+	}
+
+	snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"\r", password);
+	sendAT(buffer, strlen(buffer), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	while(appStatus != 1){
+	}
+
+	snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"\r", clientID);
+	sendAT(buffer, strlen(buffer), 0);
+	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	while(appStatus != 1){
+	}
+}
+
+static bool isConnect(void)
+{
+	bool RetVal = false;
+	uint8_t appStatus = 0;
+
+    sendAT("+SMSTATE?\r", strlen("+SMSTATE?\r"), 0);
+    appStatus = waitResponse(3000, NULL_PTR, "+SMSTATE: 0", "+SMSTATE: 1", "+SMSTATE: 2", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+    if (appStatus == 1){
+    	/* Expression MQTT Disconnect State */
+    	RetVal = false;
+    }
+    else if(appStatus == 2 || appStatus == 3){
+    	/* SMSTATE: 1 - Expression MQTT on-line state */
+    	/* SMSTATE: 2 - Expression MQTT on-line state and SP flag is set */
+    	RetVal = true;
+    }
+
+    return RetVal;
+}
+
+static void connect_mqtt(void){
+	uint8_t appStatus = 0;
+
+	sendAT("+SMCONN\r", strlen("+SMCONN\r"), 0);
+	appStatus = waitResponse(300000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
 }
 

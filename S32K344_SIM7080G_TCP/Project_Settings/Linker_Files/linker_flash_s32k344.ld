@@ -50,8 +50,8 @@ MEMORY
     int_pflash              : ORIGIN = 0x00400000, LENGTH = 0x00400000-__HSE_CODE_SIZE    /* 4096KB - __HSE_CODE_SIZE (sBAF + HSE)*/
     int_dflash              : ORIGIN = 0x10000000, LENGTH = 0x00020000-__HSE_DATA_SIZE    /* 128KB - __HSE_DATA_SIZE*/
     int_itcm                : ORIGIN = 0x00000000, LENGTH = 0x00010000    /* 64KB */
-    int_dtcm                : ORIGIN = 0x20000000, LENGTH = 0x0001F000    /* 124KB */
-    int_stack_dtcm          : ORIGIN = 0x2001F000, LENGTH = 0x00001000    /* 4KB */
+    int_dtcm                : ORIGIN = 0x20000000, LENGTH = 0x0001E000    /* 124KB */
+    int_stack_dtcm          : ORIGIN = 0x2001E000, LENGTH = 0x00002000    /* 4KB */
     int_sram                : ORIGIN = 0x20400000, LENGTH = 0x0002FF00    /* 184KB, needs to include int_sram_fls_rsv */
     int_sram_fls_rsv        : ORIGIN = 0x2042FF00, LENGTH = 0x00000100
     int_sram_no_cacheable   : ORIGIN = 0x20430000, LENGTH = 0x0000FF00    /* 64KB, needs to include int_sram_results  */
