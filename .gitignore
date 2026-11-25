@@ -1,6 +1,7 @@
 /.metadata/
 /RemoteSystemsTempFiles/
 /S32K344_SIM7080G_TCP/Debug_FLASH/
+/*/.settings/
 /ZephyrRTOS_TAD_logs/
 /FreeRTOS_TAD_logs/
 /.s32ds_packages_support/

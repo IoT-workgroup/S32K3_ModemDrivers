@@ -10,7 +10,16 @@
 
 #include "Mcal.h"
 
-#define IPV4_ELEMENTS 	(4)
+#define IPV4_ELEMENTS 		(4)
+#define GPS_MAX_CHARS		(107) 	/* 94 For the information + the AT command */
+#define GPS_COMMAND_SIZE 	(9)	
+#define MODEM_COMMA_OFFSET	(1)
+#define GPS_YEAR_OFFSET		(4)
+#define GPS_MONTH_OFFSET	(2)
+#define GPS_DAY_OFFSET		(2)
+#define GPS_HOUR_OFFSET		(2)
+#define GPS_MINUTES_OFFSET	(2)
+#define GPS_SECONDS_OFFSET	(6)
 
 typedef union {
 	uint8_t bytes[IPV4_ELEMENTS];  // IPv4 address

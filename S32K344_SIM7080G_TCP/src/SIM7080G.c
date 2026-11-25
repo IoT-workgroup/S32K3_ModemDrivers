@@ -664,30 +664,173 @@ bool disableGPS(void){
 	return retVal;
 }
 
-uin8t_t getGPSraw(char* ResultBuffer, uint8_t length){
+uint8_t getGPSraw(char* ResultBuffer, uint8_t length){
+	uint8_t retVal = 0;
 	const uint8_t emptyVal = 0xAA;
-	const uint8_t maxResp = 107;
+	
 
-	if (NULL_PTR != ResultBuffer){
-		sentAT("+", strlen(""), 0);
-
+	/* Verify that the Result Buffer is not poiting to a null pointer */
+	if (NULL_PTR == ResultBuffer){
+		retVal = 1;	
 	}
-	
-	waitResponse(0, ResultBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)
-	
 
+	if(retVal == 0){
+		/* Verify that the length of the given buffer is less or equal to the max Size */
+		if(length > GPS_MAX_CHARS){
+			retVal = 1;
+		} else {
+			/* Verify that all the elements in the array are initalized and the memory is reserved */
+			for(uint8_t i = 0; i < GPS_MAX_CHARS; i++){\
+				/* If any of the elements is different than the expected value, then break execution */
+				if(ResultBuffer[i] != emptyVal){
+					retVal = 1;
+					break;	
+				} else {
+					continue;
+				}
+			}
+		}
+	}
+
+	if(retVal == 0){
+		sentAT("+CGNSINF\r", strlen("+CGNSINF\r"), 0);
+		waitResponse(10000, ResultBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	}
+
+	return retVal;
 }
 
-uin8t_t getGPSraw(float*  , uint8_t length){
-	uint8_t TempBuffer[maxResp] = {0};
-	const uint8_t emptyVal = 0xAA;
-	const uint8_t maxResp = 107;
+uint8_t getGPS(float* lat, float* lon, float* speed, 
+			   float* alt, int* vsat, int* usat, 
+			   float* accuracy, int* year, int* month, 
+			   int* day, int* hour, int* minute, int* second){
+	uint8_t retVal = 0;
+	uint8_t TempBuffer[GPS_MAX_CHARS] = {0};
+	uint8_t DateBuffer[5] = {0};
+	uint8_t StringIndex = 0;
+	uint8_t ParamIndex = GPS_COMMAND_SIZE;
 
-	if (NULL_PTR != ResultBuffer){
-		sentAT("+", strlen(""), 0);
+	/* Tempooral variables to retrieve the information from the GPS */
+	float 	tempLat 		= 0;
+	float 	tempLon 		= 0;
+	float 	tempSpeed 		= 0;
+	float 	tempAlt 		= 0;
+	int 	tempVsat 		= 0;
+	int 	tempUsat 		= 0;
+	float 	tempAccuracy 	= 0;
+	int 	tempYear 		= 0;
+	int 	tempMonth 		= 0;
+	int 	tempDay 		= 0;
+	int 	tempHour 		= 0;
+	int 	tempMin 		= 0;
+	float 	tempSeconds 	= 0;
 
+	/* Send request to transmit the data */
+	sentAT("+CGNSINF\r", strlen("+CGNSINF\r"), 0);
+
+	/* Store the response in the Tempooral Buffer */
+	if(1 != waitResponse(10000, TempBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = 1;
+	} 
+	
+	/* Analyze Temporal Buffer with the information retrieved */
+	
+	/* Check on the GNSS run status */
+	if((retVal != 1){
+		if (1 == TempBuffer[ParamIndex++]){
+			/* This indicates that the GNSS is turned on */
+			/* Next element is a comma, so skip it */
+			ParamIndex++;
+		} else {
+			/* GNSS is turned OFF, indicate error */
+			retVal = 1;
+		}
+	} 
+
+	/* Check on the Fix Status */
+	if(retVal != 1){
+		if(1 == TempBuffer[ParamIndex++]){
+			/* This indicates that there is a fixed position obtained */
+			/* Skip the next element as it is a comma */
+			ParamIndex++;
+		} else {
+			/* There is no fixed position obtained */
+			retVal = 1;
+		}
 	}
+
+	if(retVal != 1){
+		if(',' == TempBuffer[ParamIndex]){
+			/* No date retrieved from the GPS reading */
+			ParamIndex++;
+		} else {
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_YEAR_OFFSET);
+			/* Retrieve the Year value and convert from string to int */
+			tempYear = atoi(DateBuffer);
+
+			/* Move through the array to the next element of the date */			
+			ParamIndex += GPS_YEAR_OFFSET;
+
+			/* Clear the Date Buffer for next data */
+			memset(DateBuffer, 0, sizeof(DateBuffer));
+			
+			/* Fill the Date Buffer with the month */
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MONTH_OFFSET);
+
+			/* Retrieve the Month value from the temporal buffer */
+			tempMonth = atoi(DateBuffer);
+
+			/* Move through the array to the next element of the date */			
+			ParamIndex += GPS_MONTH_OFFSET;
+
+			memset(DateBuffer, 0, sizeof(DateBuffer));
+
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_DAY_OFFSET);
+
+			tempDay = atoi(DateBuffer);
+
+			ParamIndex += GPS_DAY_OFFSET;
+
+			memset(DateBuffer, 0, sizeof(DateBuffer));
+
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_HOUR_OFFSET);
+
+			tempHour = atoi(DateBuffer);
+
+			ParamIndex += GPS_HOUR_OFFSET;
+
+			memset(DateBuffer, 0, sizeof(DateBuffer));
+
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MINUTES_OFFSET);
+
+			tempHour = atoi(DateBuffer);
+
+			ParamIndex += GPS_MINUTES_OFFSET;
+			
+			memset(DateBuffer, 0, sizeof(DateBuffer));
+
+			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_SECONDS_OFFSET);
+
+			tempHour = atoi(DateBuffer);
+
+			ParamIndex += GPS_SECONDS_OFFSET;
+		}
+	}
+
+	/* */
+	/* Retrieve UTC Date & Time */
 	
-	waitResponse(0, ResultBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)
+
+
 	
+
+
+
+
+	/* Look for the start of the IP address */
+	for(StringIndex = 0; (StringIndex < MAX_LEN && IpIndex < IPV4_ELEMENTS); StringIndex++){
+		if((IPstring[StringIndex] == '"') || (IPstring[StringIndex] == '.')){
+			Parts[IpIndex++] = atoi((const char *)&IPstring[StringIndex+1]);
+		}
+	}
 }
