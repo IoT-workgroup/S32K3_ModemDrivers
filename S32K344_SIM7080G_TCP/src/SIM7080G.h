@@ -316,6 +316,23 @@ int8_t getRegistrationStatusXREG(const char* regCommand);
 */
 SIM70xxRegStatus getRegistrationStatus(void);
 
+/**
+* @brief         Enables the GNSS functionality of the modem
+* @api
+* @param[in]     Void - N/A
+* @return        Retrieves the whether the command to enable th GPS was sucessful or not
+* implements     enableGPS
+*/
+bool enableGPS(void);
+
+/**
+* @brief         Disables the GNSS functionality of the modem
+* @api
+* @param[in]     Void - N/A
+* @return        Retrieves the whether the command to disable the GPS was sucessful or not
+* implements     disableGPS
+*/
+bool disableGPS(void);
 
 
 #endif /* SIM7080G_H_ */

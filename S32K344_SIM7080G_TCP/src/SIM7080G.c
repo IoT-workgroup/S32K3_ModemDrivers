@@ -626,3 +626,68 @@ SIM70xxRegStatus getRegistrationStatus(void){
 	return epsStatus;
 }
 
+/**
+* @brief         Enables the GNSS functionality of the modem
+* @api
+* @param[in]     Void - N/A
+* @return        Retrieves the whether the command to enable th GPS was sucessful or not
+* implements     enableGPS
+*/
+bool enableGPS(void){
+	bool retVal = false;
+	sendAT("+CGNSPWR=1\r", strlen("+CGNSPWR=1\r"), 0);
+	if(1 != waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = false;
+	} else {
+		retVal = true;
+	}
+
+	return retVal;
+}
+
+/**
+* @brief         Disables the GNSS functionality of the modem
+* @api
+* @param[in]     Void - N/A
+* @return        Retrieves the whether the command to disable the GPS was sucessful or not
+* implements     disableGPS
+*/
+bool disableGPS(void){
+	bool retVal = false;
+	sendAT("+CGNSPWR=0\r", strlen("+CGNSPWR=0\r"), 0);
+	if(1 != waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = false;
+	} else {
+		retVal = true;
+	}
+
+	return retVal;
+}
+
+uin8t_t getGPSraw(char* ResultBuffer, uint8_t length){
+	const uint8_t emptyVal = 0xAA;
+	const uint8_t maxResp = 107;
+
+	if (NULL_PTR != ResultBuffer){
+		sentAT("+", strlen(""), 0);
+
+	}
+	
+	waitResponse(0, ResultBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)
+	
+
+}
+
+uin8t_t getGPSraw(float*  , uint8_t length){
+	uint8_t TempBuffer[maxResp] = {0};
+	const uint8_t emptyVal = 0xAA;
+	const uint8_t maxResp = 107;
+
+	if (NULL_PTR != ResultBuffer){
+		sentAT("+", strlen(""), 0);
+
+	}
+	
+	waitResponse(0, ResultBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)
+	
+}
