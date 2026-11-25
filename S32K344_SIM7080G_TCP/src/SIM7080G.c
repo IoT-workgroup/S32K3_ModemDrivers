@@ -730,10 +730,7 @@ uint8_t getGPS(float* lat, float* lon, float* speed,
 
 	/* Store the response in the Tempooral Buffer */
 	if(1 != waitResponse(10000, TempBuffer, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
-		retVal = 1;
-	} 
-	
-	/* Analyze Temporal Buffer with the information retrieved */
+		/* Analyze Temporal Buffer with the information retrieved */
 	
 	/* Check on the GNSS run status */
 	if((retVal != 1){
@@ -747,90 +744,166 @@ uint8_t getGPS(float* lat, float* lon, float* speed,
 		}
 	} 
 
-	/* Check on the Fix Status */
-	if(retVal != 1){
-		if(1 == TempBuffer[ParamIndex++]){
-			/* This indicates that there is a fixed position obtained */
-			/* Skip the next element as it is a comma */
-			ParamIndex++;
-		} else {
-			/* There is no fixed position obtained */
-			retVal = 1;
-		}
+/* Check on the Fix Status */
+	if(1 == TempBuffer[ParamIndex++]){
+		/* This indicates that there is a fixed position obtained */
+		/* Skip the next element as it is a comma */
+		ParamIndex++;
+	} else {
+		/* There is no fixed position obtained */
+		retVal = 1;
 	}
 
-	if(retVal != 1){
-		if(',' == TempBuffer[ParamIndex]){
-			/* No date retrieved from the GPS reading */
-			ParamIndex++;
-		} else {
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_YEAR_OFFSET);
-			/* Retrieve the Year value and convert from string to int */
-			tempYear = atoi(DateBuffer);
+	if(',' == TempBuffer[ParamIndex]){
+		/* No date retrieved from the GPS reading */
+		ParamIndex++;
+	} else {
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_YEAR_OFFSET);
+		/* Retrieve the Year value and convert from string to int */
+		tempYear = atoi(DateBuffer);
 
-			/* Move through the array to the next element of the date */			
-			ParamIndex += GPS_YEAR_OFFSET;
+		/* Move through the array to the next element of the date */			
+		ParamIndex += GPS_YEAR_OFFSET;
 
-			/* Clear the Date Buffer for next data */
-			memset(DateBuffer, 0, sizeof(DateBuffer));
-			
-			/* Fill the Date Buffer with the month */
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MONTH_OFFSET);
+		/* Clear the Date Buffer for next data */
+		memset(DateBuffer, 0, sizeof(DateBuffer));
+		
+		/* Fill the Date Buffer with the month */
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MONTH_OFFSET);
 
-			/* Retrieve the Month value from the temporal buffer */
-			tempMonth = atoi(DateBuffer);
+		/* Retrieve the Month value from the temporal buffer */
+		tempMonth = atoi(DateBuffer);
 
-			/* Move through the array to the next element of the date */			
-			ParamIndex += GPS_MONTH_OFFSET;
+		/* Move through the array to the next element of the date */			
+		ParamIndex += GPS_MONTH_OFFSET;
 
-			memset(DateBuffer, 0, sizeof(DateBuffer));
+		memset(DateBuffer, 0, sizeof(DateBuffer));
 
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_DAY_OFFSET);
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_DAY_OFFSET);
 
-			tempDay = atoi(DateBuffer);
+		tempDay = atoi(DateBuffer);
 
-			ParamIndex += GPS_DAY_OFFSET;
+		ParamIndex += GPS_DAY_OFFSET;
 
-			memset(DateBuffer, 0, sizeof(DateBuffer));
+		memset(DateBuffer, 0, sizeof(DateBuffer));
 
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_HOUR_OFFSET);
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_HOUR_OFFSET);
 
-			tempHour = atoi(DateBuffer);
+		tempHour = atoi(DateBuffer);
 
-			ParamIndex += GPS_HOUR_OFFSET;
+		ParamIndex += GPS_HOUR_OFFSET;
 
-			memset(DateBuffer, 0, sizeof(DateBuffer));
+		memset(DateBuffer, 0, sizeof(DateBuffer));
 
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MINUTES_OFFSET);
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_MINUTES_OFFSET);
 
-			tempHour = atoi(DateBuffer);
+		tempMin = atoi(DateBuffer);
 
-			ParamIndex += GPS_MINUTES_OFFSET;
-			
-			memset(DateBuffer, 0, sizeof(DateBuffer));
+		ParamIndex += GPS_MINUTES_OFFSET;
+		
+		memset(DateBuffer, 0, sizeof(DateBuffer));
 
-			memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_SECONDS_OFFSET);
+		memcpy(DateBuffer, &TempBuffer[ParamIndex], GPS_SECONDS_OFFSET);
 
-			tempHour = atoi(DateBuffer);
+		tempSeconds = atof(DateBuffer);
 
-			ParamIndex += GPS_SECONDS_OFFSET;
-		}
+		ParamIndex += GPS_SECONDS_OFFSET;
+
+		ParamIndex++;
 	}
 
-	/* */
-	/* Retrieve UTC Date & Time */
+	tempLat = atof((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the latitude to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Obtain the value for Longitude*/
+	tempLon = atof((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the longitude to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	tempAlt = atof((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the Altitude to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	tempSpeed = atof((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the Speed Over Ground to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Course Over Ground to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Fix Mode to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Reserved 1 param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	tempAccuracy = atof((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the Horizontal Dilution of Precision param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Position Dilution of Precision param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Vertical Dilution of Precision param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	/* Skip over the Reserved2 param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	tempVsat = atoi((uint8_t*) &TempBuffer[ParamIndex]);
+
+	/* Skip over the GPS Satellites in View param to find the next parameter received */
+	for(ParamIndex; ParamIndex < GPS_MAX_CHARS; ParamIndex++){
+		TempBuffer[ParamIndex] == ',';
+		break;
+	}
+
+	tempUsat = atoi((uint8_t*) &TempBuffer[ParamIndex]);
+			
+	} else {
+		retVal = 1;
+	}
+	
 	
 
-
-	
-
-
-
-
-	/* Look for the start of the IP address */
-	for(StringIndex = 0; (StringIndex < MAX_LEN && IpIndex < IPV4_ELEMENTS); StringIndex++){
-		if((IPstring[StringIndex] == '"') || (IPstring[StringIndex] == '.')){
-			Parts[IpIndex++] = atoi((const char *)&IPstring[StringIndex+1]);
-		}
-	}
+	return retVal;
 }
