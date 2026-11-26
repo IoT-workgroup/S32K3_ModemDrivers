@@ -271,6 +271,58 @@ uint8_t sendAT
 }
 
 /**
+* @brief        Implements Auto Baudrate functionality for sync with the modem.
+*
+* @api
+* @param[in]	N/A
+* @return       Indicates if successful response was obtained from SIM or not.
+* implements    autoBaudrate
+*/
+bool autoBaudrate
+(
+	void
+)
+{
+	bool retVal = false;
+
+	sendAT("AT\r", strlen("AT\r"), 0);
+	if (1 == waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = true;
+	} else {
+		retVal = false;
+	}
+
+	return retVal;
+}
+
+
+/**
+* @brief         Disables the echo functionality of the SIM
+*
+* @api
+* @param[in]     N/A.
+* @return        Boolean value
+* @retval        True: Echo mode disabled succesfully.
+* @retval        False: Echo mode not disabled.
+* implements     Test AT
+*/
+bool disableEcho
+(
+	void
+)
+{
+	bool retVal = false;
+	sendAT("ATE0\r", strlen("ATE0\r"), 0);
+	if(1 == waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = true;
+	} else {
+		retVal = false;
+	}
+
+	return retVal;
+}
+
+/**
 * @brief        Tests the functionality of the AT commands with the modem in serial communication.
 *
 * @api
@@ -640,6 +692,34 @@ bool enableGPS(void){
 		retVal = false;
 	} else {
 		retVal = true;
+	}
+
+	return retVal;
+}
+
+/**
+* @brief         Get current status of the GNSS Power Supply
+* @api
+* @param[in]     Void - N/A
+* @return        true - GNSS Power Supply is enabled
+* @return 	     false - GNSS Power Supply is not enabled or an error occurred.		
+* implements     getStatusGPS
+*/
+bool getStatusGPS
+(
+	void
+)
+{
+	bool retVal = false;
+
+	/* Request for the current status of the GNSS power supply */
+	sendAT("+CGNSPWR?\r", sizeof("+CGNSPWR?\r"), 0);
+	
+	/* Wait to receive either a 1 or a 0 to indicate the status of the GNSS power supply */
+	if(1 == waitResponse(0, NULL_PTR, "1", "0", NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR)){
+		retVal = true;
+	} else {
+		retVal = false;
 	}
 
 	return retVal;

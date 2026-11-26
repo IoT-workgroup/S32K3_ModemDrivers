@@ -213,6 +213,20 @@ uint8_t sendAT
 	uint16_t delay_ms
 );
 
+
+/**
+* @brief        Implements Auto Baudrate functionality for sync with the modem.
+*
+* @api
+* @param[in]	N/A
+* @return       Indicates if successful response was obtained from SIM or not.
+* implements    autoBaudrate
+*/
+bool autoBaudrate
+(
+	void
+);
+
 /**
 * @brief        Tests the functionality of the AT commands with the modem in serial communication.
 *
@@ -224,6 +238,18 @@ uint8_t sendAT
 * implements     Test AT
 */
 bool TestAT(uint32_t timeout_ms);
+
+/**
+* @brief         Disables the echo functionality of the SIM
+*
+* @api
+* @param[in]     N/A.
+* @return        Boolean value
+* @retval        True: Echo mode disabled succesfully.
+* @retval        False: Echo mode not disabled.
+* implements     Test AT
+*/
+bool disableEcho(void);
 
 /**
 * @brief         Retrieve the LocalIP value from the modem
@@ -335,6 +361,16 @@ SIM70xxRegStatus getRegistrationStatus(void);
 bool enableGPS(void);
 
 /**
+* @brief         Get current status of the GNSS Power Supply
+* @api
+* @param[in]     Void - N/A
+* @return        true - GNSS Power Supply is enabled
+* @return 	     false - GNSS Power Supply is not enabled or an error occurred.		
+* implements     getStatusGPS
+*/
+bool getStatusGPS(void);
+
+/**
 * @brief         Disables the GNSS functionality of the modem
 * @api
 * @param[in]     Void - N/A
@@ -343,5 +379,11 @@ bool enableGPS(void);
 */
 bool disableGPS(void);
 
+uint8_t getGPSraw(char* ResultBuffer, uint8_t length);
+
+uint8_t getGPS(float* lat, float* lon, float* speed, 
+			   float* alt, int* vsat, int* usat, 
+			   float* accuracy, int* year, int* month, 
+			   int* day, int* hour, int* minute, int* second);
 
 #endif /* SIM7080G_H_ */

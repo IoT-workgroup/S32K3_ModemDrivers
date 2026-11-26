@@ -11,8 +11,8 @@
 const char Automatic_Network[] = "2";
 const char LTE[] = "38";
 const char Modem_CATM[] = "1";
-const char NB_IOT[]="2";
-const char NB_IOT_AND_CATM[]="3";
+const char NB_IOT[] = "2";
+const char NB_IOT_AND_CATM[] = "3";
 char buffer[1024] = {0};
 
 // cayenne server address and port
@@ -398,16 +398,11 @@ void application_iot(void){
 	initModem();
 
 	/* Wait for the Auto-Baudrate to occur */
-	while(1 != appStatus){
-		sendAT("AT\r", strlen("AT\r"), 0);
-		appStatus = waitResponse(5000, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
+	while(autoBaudrate()){
 	}
 
 	/* Disable ECHO */
-	sendAT("ATE0\r", strlen("ATE0\r"), 0);
-	appStatus = waitResponse(0, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR, NULL_PTR);
-	while(1 != appStatus){
-		/* ECHO was not disabled */
+	while(disableEcho()){
 	}
 
 	/* Verify if the SIM CARD is inserted */
@@ -526,6 +521,45 @@ void application_iot(void){
 			}
 		}
 	}
+}
+
+void application_gps(void){
+
+	/* Initialize PWRKEY to enable communication */
+	initModem();
+
+	/* Wait for the Auto-Baudrate to occur */
+	while(autoBaudrate()){
+	}
+
+	/* Disable ECHO */
+	while(disableEcho()){
+	}
+
+	/* Configure the network mode to be CAT-M LTE */
+	while(!setNetworkMode(LTE)){
+		/* If network mode configuration failed try again after 1 second*/
+		Delay(1000);
+	}
+
+	/* Configure the preferred mode to be CAT-M only */
+	while(!setPreferredMode(NB_IOT_AND_CATM)){
+		/* If preferred mode configuration failed try again after 1 second */
+		Delay(1000);
+	}
+
+	/* If the GPS is not enabled, then proceed with the enablement */
+	if(!getStatusGPS()){
+		/* Enable GPS connection */
+		while(!enableGPS()){
+			/* If GPS enablement failed, try again after 1 second */
+			Delay(1000);
+		}
+	}
+
+	/* Configure MQTT server with user information */
+	config_mqtt();
+
 }
 
 static void config_mqtt(void){
